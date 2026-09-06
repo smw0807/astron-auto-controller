@@ -5,7 +5,12 @@
 
 목적: 500킬 후 자동사냥이 종료되고 마을로 이동되면 → 자동으로 사냥터 복귀 & 사냥 재개.
 
-## 상태 (Phase 4 완료)
+## 상태
+
+**섬능1/섬능2 자동사냥 실동작 확인** (2026-09-06): 마을 감지 → 사냥터 복귀 → 편대 가입
+(편대장 자동 승인) → 편대원 텔레포트 → 블루스택 매크로 사냥. 전체 무인 루프 완성.
+
+## 기능 (Phase 1~4)
 
 - [x] BlueStacks 인스턴스 스캐너 (`bluestacks.conf` 파싱 + `HD-Player.exe` 프로세스 매칭 + adb 연결)
 - [x] ADB 제어 계층 (`HD-Adb.exe` 래퍼, 인스턴스별 tap / swipe / keyevent / screencap / wm size)
@@ -57,6 +62,24 @@ py -3.13 -m venv .venv
 .venv\Scripts\python -m aac.tools.watch           # 배정된 모든 인스턴스 감시 실행
 ```
 
+## 아스트로엔 실전 설정 (섬능1/섬능2 예시)
+
+`flows/` 에 커밋된 것: `자동사냥루프`(감시), `사냥시작`(마을→사냥 시퀀스), `승인`(편대장 전용).
+`templates/` 에 실측 크롭 이미지들.
+
+| 인스턴스 | 플로우 | 변수 | 간격 |
+|---|---|---|---|
+| 섬능1 | 자동사냥루프 | `tp_target=sq_member_toodan4.png` | 600s |
+| 섬능2 | 자동사냥루프 | `tp_target=sq_member_toodans.png` | 600s |
+| 에분기1 (편대장) | 승인 | — | 3s |
+
+대시보드에서 각 행의 **⚙** 버튼으로 `tp_target` / 간격 override 편집 → settings.json 저장.
+사냥터가 다르면 M6-1(1) 부분 템플릿(`hg_paren1.png`)을 각자 것으로 교체.
+
+**동작**: `자동사냥루프` 가 10분마다 TAB 으로 지도를 열어 `map_village.png`(무기상점 텍스트)가
+보이면 = 마을 = 500킬 종료 → `사냥시작` 호출. 편대 가입 요청은 편대장 인스턴스의 `승인`
+플로우가 요청자 이름에 "TooDan" 이 있을 때만 승인.
+
 ## 플로우 만들기 (GUI "플로우" 탭)
 
 1. "플로우" 탭 → **이벤트 스켈레톤 생성** → `flows/` 에 7개 서브플로우 뼈대 생성
@@ -80,7 +103,7 @@ py -3.13 -m venv .venv
 
 | 분류 | 스텝 |
 |---|---|
-| 입력 | `tap`(좌표/템플릿), `tap_template`, `swipe`, `key`, `text` |
+| 입력 | `tap`(좌표/템플릿, `taps`=더블탭), `tap_template`(`region` 검색영역, `offset_x/y`, `taps`), `swipe`, `key`, `text` |
 | 흐름 | `wait`, `wait_template`, `if_template`(+else), `loop`, `repeat_until_template`, `call_flow` |
 | 앱 | `launch_app`, `stop_app` |
 | 인식 | `ocr_region`(숫자→`${var}` / `${var}_int` / `${var}_prev`), `screenshot` |
@@ -95,7 +118,9 @@ py -3.13 -m venv .venv
 | `bluestacks_conf` | `bluestacks.conf` 경로 (자동 탐지) |
 | `adb_server_port` | HD-Adb 서버 포트 (기본 5037) |
 | `instance_flows` | 인스턴스 key → 플로우 파일 매핑 |
-| `watch_interval_sec` | 감시 루프 주기 |
+| `instance_vars` | 인스턴스 key → {변수명: 값} (플로우 시작 시 주입, `${var}` 로 참조) |
+| `instance_intervals` | 인스턴스 key → 감시 간격(초) override |
+| `watch_interval_sec` | 기본 감시 루프 주기 |
 | `template_match_threshold` | 템플릿 매칭 임계값 (기본 0.85) |
 | `notifications_enabled` | 데스크톱(트레이) 알림 |
 | `schedule_enabled` / `active_hours` / `daily_restart_time` / `periodic_restart_min` | 스케줄러 |

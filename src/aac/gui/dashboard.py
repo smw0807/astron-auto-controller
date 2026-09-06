@@ -23,7 +23,7 @@ from aac.config import SETTINGS
 from aac.flow import Flow
 from aac.runner import RunnerManager, Scheduler
 
-_COLS = ["별명", "key", "온라인", "플로우", "상태", "반복", ""]
+_COLS = ["별명", "key", "온라인", "플로우", "상태", "반복", "설정", ""]
 
 
 class Dashboard(QWidget):
@@ -149,9 +149,14 @@ class Dashboard(QWidget):
             self._set(r, 4, st.status, center=True)
             self._set(r, 5, str(st.iterations), center=True)
 
+            cfg = QPushButton("⚙")
+            cfg.setFixedWidth(34)
+            cfg.clicked.connect(lambda _=False, k=st.key: self._edit_instance(k))
+            self.table.setCellWidget(r, 6, cfg)
+
             btn = QPushButton("시작")
             btn.clicked.connect(lambda _=False, k=st.key: self._toggle(k))
-            self.table.setCellWidget(r, 6, btn)
+            self.table.setCellWidget(r, 7, btn)
             self._refresh_row(st.key)
 
     def _set(self, r: int, c: int, text: str, center: bool = False) -> None:
@@ -166,6 +171,66 @@ class Dashboard(QWidget):
         else:
             self.mgr.start(key, float(self.interval_spin.value()))
 
+    def _edit_instance(self, key: str) -> None:
+        from PySide6.QtWidgets import (
+            QDialog,
+            QDialogButtonBox,
+            QDoubleSpinBox,
+            QFormLayout,
+            QLineEdit,
+        )
+
+        from aac.vision.template import list_templates
+
+        st = self.mgr.state(key)
+        cur_vars = dict(SETTINGS.instance_vars.get(key, {}))
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"인스턴스 설정 — {st.display_name or key}")
+        form = QFormLayout(dlg)
+
+        tp = QComboBox()
+        tp.setEditable(True)
+        tp.addItems([""] + list_templates())
+        tp.setCurrentText(cur_vars.get("tp_target", ""))
+        form.addRow("tp_target (텔레포트 대상 템플릿)", tp)
+
+        extra = QLineEdit(
+            ",".join(f"{k}={v}" for k, v in cur_vars.items() if k != "tp_target")
+        )
+        extra.setPlaceholderText("추가변수  name=value,name2=value2")
+        form.addRow("추가 변수", extra)
+
+        iv = QDoubleSpinBox()
+        iv.setRange(0, 3600)
+        iv.setSuffix(" s (0=기본)")
+        iv.setValue(SETTINGS.instance_intervals.get(key, 0.0))
+        form.addRow("감시 간격 override", iv)
+
+        bb = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        bb.accepted.connect(dlg.accept)
+        bb.rejected.connect(dlg.reject)
+        form.addRow(bb)
+        if dlg.exec() != QDialog.Accepted:
+            return
+
+        new_vars: dict[str, str] = {}
+        if tp.currentText().strip():
+            new_vars["tp_target"] = tp.currentText().strip()
+        for pair in extra.text().split(","):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                new_vars[k.strip()] = v.strip()
+        if new_vars:
+            SETTINGS.instance_vars[key] = new_vars
+        else:
+            SETTINGS.instance_vars.pop(key, None)
+        if iv.value() > 0:
+            SETTINGS.instance_intervals[key] = iv.value()
+        else:
+            SETTINGS.instance_intervals.pop(key, None)
+        SETTINGS.save()
+        self.log.appendPlainText(f"[{st.display_name or key}] 설정 저장: {new_vars}")
+
     def _refresh_row(self, key: str) -> None:
         r = self._row_by_key.get(key)
         if r is None:
@@ -175,7 +240,7 @@ class Dashboard(QWidget):
             self.table.item(r, 4).setText(st.status)
         if self.table.item(r, 5):
             self.table.item(r, 5).setText(str(st.iterations))
-        btn = self.table.cellWidget(r, 6)
+        btn = self.table.cellWidget(r, 7)
         if isinstance(btn, QPushButton):
             running = self.mgr.is_running(key)
             btn.setText("정지" if running else "시작")
