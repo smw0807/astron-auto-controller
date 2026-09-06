@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "name": "아이템수리",
+  "description": "상점 NPC 대화 → 전체 수리",
+  "package": "",
+  "steps": [
+    {
+      "type": "log",
+      "id": "285ba8c7",
+      "params": {
+        "message": "아이템 수리"
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "84d0bb11",
+      "params": {
+        "template": "npc_weapon_shop.png",
+        "timeout": 8,
+        "required": false,
+        "after_ms": 800
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "7986cf21",
+      "params": {
+        "template": "btn_repair.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 600
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "587b0a8e",
+      "params": {
+        "template": "btn_repair_all.png",
+        "timeout": 5,
+        "required": false,
+        "after_ms": 500
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "c7305a7c",
+      "params": {
+        "template": "btn_confirm.png",
+        "timeout": 5,
+        "required": false,
+        "after_ms": 800
+      }
+    },
+    {
+      "type": "key",
+      "id": "c8503817",
+      "params": {
+        "keycode": "BACK"
+      }
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "name": "사냥터이동",
+  "description": "마을에서 지정 사냥터로 이동 (NPC/이동목록/지도 등)",
+  "package": "",
+  "steps": [
+    {
+      "type": "log",
+      "id": "7ea81fb6",
+      "params": {
+        "message": "사냥터 이동 시작"
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "a63bd95e",
+      "params": {
+        "template": "btn_menu.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 600
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "b6f59e19",
+      "params": {
+        "template": "btn_move_list.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 800
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "8aa01d48",
+      "params": {
+        "template": "dest_hunting_ground.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 1000
+      },
+      "note": "목표 사냥터 항목"
+    },
+    {
+      "type": "tap_template",
+      "id": "59deb24c",
+      "params": {
+        "template": "btn_move_confirm.png",
+        "timeout": 6,
+        "required": false,
+        "after_ms": 500
+      }
+    },
+    {
+      "type": "wait_template",
+      "id": "e38656e6",
+      "params": {
+        "template": "hud_field.png",
+        "timeout": 25,
+        "required": true
+      }
+    },
+    {
+      "type": "log",
+      "id": "0a456a36",
+      "params": {
+        "message": "사냥터 도착"
+      }
+    }
+  ]
+}

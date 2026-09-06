@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "name": "텔레포트",
+  "description": "텔레포트 아이템/스킬 사용",
+  "package": "",
+  "steps": [
+    {
+      "type": "log",
+      "id": "543692e1",
+      "params": {
+        "message": "텔레포트"
+      }
+    },
+    {
+      "type": "key",
+      "id": "b7311357",
+      "params": {
+        "keycode": "MENU"
+      },
+      "note": "인벤토리 단축키가 있으면 교체"
+    },
+    {
+      "type": "tap_template",
+      "id": "49743ba2",
+      "params": {
+        "template": "item_teleport.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 600
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "e1ff8678",
+      "params": {
+        "template": "btn_use.png",
+        "timeout": 5,
+        "required": false,
+        "after_ms": 1500
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "6d150423",
+      "params": {
+        "template": "teleport_dest.png",
+        "timeout": 8,
+        "required": false,
+        "after_ms": 1500
+      }
+    },
+    {
+      "type": "wait_template",
+      "id": "6b68c764",
+      "params": {
+        "template": "hud_ingame.png",
+        "timeout": 20,
+        "required": false
+      }
+    }
+  ]
+}

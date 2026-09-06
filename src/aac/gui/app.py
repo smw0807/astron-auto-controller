@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QSplitter,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -22,25 +23,24 @@ from PySide6.QtWidgets import (
 from aac.adb import AdbClient, Device
 from aac.bluestacks import BlueStacksInstance
 from aac.gui.capture_view import CaptureView
+from aac.gui.flow_editor import FlowEditor
 from aac.gui.instances_panel import InstancesPanel
 from aac.gui.workers import ScreenshotThread
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Astron Auto Controller")
-        self.resize(1180, 720)
+class CapturePage(QWidget):
+    """인스턴스 목록 + 라이브 스크린샷 + 좌표 도구."""
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self._current: BlueStacksInstance | None = None
         self._shot: ScreenshotThread | None = None
         self._device: Device | None = None
+        self._last_norm: tuple[float, float] | None = None
 
-        # --- 좌: 인스턴스 패널 ---
         self.instances = InstancesPanel()
         self.instances.instance_selected.connect(self._on_instance_selected)
 
-        # --- 우: 캡처 + 컨트롤 ---
         self.view = CaptureView()
         self.view.clicked.connect(self._on_view_clicked)
         self.view.region_selected.connect(self._on_region_selected)
@@ -61,7 +61,6 @@ class MainWindow(QMainWindow):
         self.tap_btn = QPushButton("이 좌표 탭")
         self.tap_btn.setEnabled(False)
         self.tap_btn.clicked.connect(self._tap_last)
-        self._last_norm: tuple[float, float] | None = None
 
         ctl = QHBoxLayout()
         ctl.addWidget(self.live_chk)
@@ -88,36 +87,31 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.instances)
         splitter.addWidget(right)
-        splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([380, 800])
-        self.setCentralWidget(splitter)
 
-        self.statusBar().showMessage("준비됨 — [스캔] 을 눌러 인스턴스를 조회하세요")
-        self.instances.scan()
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(splitter)
 
-    # --- 로그 ------------------------------------------------------
+    # --- 로그 ---
     def _log(self, msg: str) -> None:
         self.log.appendPlainText(msg)
 
-    # --- 인스턴스 선택 --------------------------------------------
+    # --- 선택 ---
     def _on_instance_selected(self, inst: BlueStacksInstance | None) -> None:
         self._stop_live()
         self._current = inst
         self._device = None
         if inst is None or not inst.online or not inst.serial:
             self.view.clear_frame()
-            self.statusBar().showMessage("온라인 인스턴스가 아닙니다")
             return
         self._device = Device(serial=inst.serial, client=AdbClient())
         self._device.connect()
-        self.statusBar().showMessage(
-            f"{inst.label}  serial={inst.serial}  size={self._device.size}"
-        )
-        self._log(f"선택: {inst.label} ({inst.serial})")
+        self._log(f"선택: {inst.label} ({inst.serial}) size={self._device.size}")
         self._grab_once()
 
-    # --- 캡처 ------------------------------------------------------
+    # --- 캡처 ---
     def _grab_once(self) -> None:
         if self._device is None:
             return
@@ -128,10 +122,7 @@ class MainWindow(QMainWindow):
             self._log("스크린샷 실패")
 
     def _toggle_live(self, on: bool) -> None:
-        if on:
-            self._start_live()
-        else:
-            self._stop_live()
+        self._start_live() if on else self._stop_live()
 
     def _start_live(self) -> None:
         if self._current is None or not self._current.serial:
@@ -142,7 +133,6 @@ class MainWindow(QMainWindow):
         self._shot.frame.connect(self.view.set_frame)
         self._shot.error.connect(self._log)
         self._shot.start()
-        self._log("라이브 시작")
 
     def _stop_live(self) -> None:
         if self._shot is not None:
@@ -154,14 +144,14 @@ class MainWindow(QMainWindow):
         if self._shot is not None:
             self._shot.set_interval(ms)
 
-    # --- 좌표 / 탭 -----------------------------------------------
+    # --- 좌표/탭 ---
     def _on_view_clicked(self, nx: float, ny: float) -> None:
         self._last_norm = (nx, ny)
-        px = py = None
+        px = None
         if self._device is not None:
-            px, py = self._device.to_px(nx, ny)
+            px = self._device.to_px(nx, ny)
         self.coord_lbl.setText(
-            f"좌표: n=({nx:.4f}, {ny:.4f})" + (f"  px=({px}, {py})" if px is not None else "")
+            f"좌표: n=({nx:.4f}, {ny:.4f})" + (f"  px={px}" if px else "")
         )
         self.tap_btn.setEnabled(self._device is not None)
 
@@ -172,12 +162,36 @@ class MainWindow(QMainWindow):
         self._log(f"탭 {self._last_norm} -> px {self._device.to_px(*self._last_norm)}")
 
     def _on_region_selected(self, x: float, y: float, w: float, h: float) -> None:
-        self.coord_lbl.setText(f"영역: x={x:.4f} y={y:.4f} w={w:.4f} h={h:.4f}")
-        self._log(f"영역 선택 (템플릿 크롭 예정): {x:.4f},{y:.4f} {w:.4f}x{h:.4f}")
+        self.coord_lbl.setText(f"영역: {x:.4f},{y:.4f} {w:.4f}x{h:.4f}")
+        self._log(f"영역: region 파라미터에 붙여넣기 → {x:.4f},{y:.4f},{w:.4f},{h:.4f}")
 
-    # --- 종료 -----------------------------------------------------
-    def closeEvent(self, event) -> None:
+    def shutdown(self) -> None:
         self._stop_live()
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Astron Auto Controller")
+        self.resize(1240, 760)
+
+        self.capture_page = CapturePage()
+        self.flow_page = FlowEditor()
+
+        # 스캔 결과를 플로우 탭의 대상 인스턴스 목록에 반영
+        self.capture_page.instances.scan_finished.connect(self.flow_page.set_instances)
+
+        tabs = QTabWidget()
+        tabs.addTab(self.capture_page, "인스턴스 / 캡처")
+        tabs.addTab(self.flow_page, "플로우")
+        self.setCentralWidget(tabs)
+
+        self.statusBar().showMessage("준비됨")
+        self.capture_page.instances.scan()
+
+    def closeEvent(self, event) -> None:
+        self.capture_page.shutdown()
+        self.flow_page.shutdown()
         super().closeEvent(event)
 
 

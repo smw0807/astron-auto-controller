@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "name": "무기상점이동",
+  "description": "마을 무기상점 NPC 로 이동",
+  "package": "",
+  "steps": [
+    {
+      "type": "log",
+      "id": "124390ec",
+      "params": {
+        "message": "무기상점 이동"
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "6a907e9f",
+      "params": {
+        "template": "btn_menu.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 600
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "2cee1992",
+      "params": {
+        "template": "btn_move_list.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 800
+      }
+    },
+    {
+      "type": "tap_template",
+      "id": "1536b546",
+      "params": {
+        "template": "dest_weapon_shop.png",
+        "timeout": 8.0,
+        "required": true,
+        "after_ms": 1000
+      }
+    },
+    {
+      "type": "wait_template",
+      "id": "c0f796f4",
+      "params": {
+        "template": "npc_weapon_shop.png",
+        "timeout": 20,
+        "required": false
+      }
+    }
+  ]
+}
