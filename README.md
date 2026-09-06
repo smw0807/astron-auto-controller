@@ -76,9 +76,10 @@ py -3.13 -m venv .venv
 대시보드에서 각 행의 **⚙** 버튼으로 `tp_target` / 간격 override 편집 → settings.json 저장.
 사냥터가 다르면 M6-1(1) 부분 템플릿(`hg_paren1.png`)을 각자 것으로 교체.
 
-**동작**: `자동사냥루프` 가 10분마다 TAB 으로 지도를 열어 `map_village.png`(무기상점 텍스트)가
-보이면 = 마을 = 500킬 종료 → `사냥시작` 호출. 편대 가입 요청은 편대장 인스턴스의 `승인`
-플로우가 요청자 이름에 "TooDan" 이 있을 때만 승인.
+**동작**: `자동사냥루프` 가 10분마다 → ① 화면 멈춤(`if_frozen`, 14초간 픽셀차 비교) 감지 시
+`재접속`(게임 재시작+로그인) → `사냥시작`. ② 아니면 TAB 으로 지도를 열어 `map_village.png`(무기상점)가
+보이면 = 마을 = 500킬 종료 → `사냥시작`. 편대 가입 요청은 편대장 인스턴스의 `승인` 플로우가
+요청자 이름에 "TooDan" 이 있을 때만 승인.
 
 ## 플로우 만들기 (GUI "플로우" 탭)
 
@@ -104,7 +105,7 @@ py -3.13 -m venv .venv
 | 분류 | 스텝 |
 |---|---|
 | 입력 | `tap`(좌표/템플릿, `taps`=더블탭), `tap_template`(`region` 검색영역, `offset_x/y`, `taps`), `swipe`, `key`, `text` |
-| 흐름 | `wait`, `wait_template`, `if_template`(+else), `loop`, `repeat_until_template`, `call_flow` |
+| 흐름 | `wait`, `wait_template`, `if_template`(+else), `if_frozen`(화면 멈춤 감지), `loop`, `repeat_until_template`, `call_flow` |
 | 앱 | `launch_app`, `stop_app` |
 | 인식 | `ocr_region`(숫자→`${var}` / `${var}_int` / `${var}_prev`), `screenshot` |
 | 변수 | `set_var`(`${x}` 치환), `if_var`(`== != >= <= > < contains empty not_empty changed`), `repeat_until_var` |
