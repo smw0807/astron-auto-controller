@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# runtime data
+/captures/
+/logs/
+*.log
+
+# user content kept, but ignore scratch
+/templates/_scratch/
