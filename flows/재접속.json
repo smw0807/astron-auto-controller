@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "재접속",
-  "description": "화면 멈춤/튕김 시 게임 강제종료 후 재로그인. 서버 +NSPACE+, 캐릭터 1번 슬롯.",
+  "description": "게임 강제종료 후 재로그인. 서버 +NSPACE+, 캐릭터 1번 슬롯 → 마을.",
   "package": "",
   "steps": [
     {
@@ -40,7 +40,7 @@
         "after_ms": 1500,
         "required": false
       },
-      "note": "결제오류 OK"
+      "note": "결제오류 OK(뜰 때만)"
     },
     {
       "type": "tap",
@@ -58,7 +58,7 @@
         "y": 0.8,
         "after_ms": 1200
       },
-      "note": "월드 선택 버튼"
+      "note": "월드 선택"
     },
     {
       "type": "wait_template",
@@ -76,7 +76,7 @@
         "y": 0.454,
         "after_ms": 1000
       },
-      "note": "1번 캐릭터 슬롯"
+      "note": "1번 캐릭터"
     },
     {
       "type": "tap",

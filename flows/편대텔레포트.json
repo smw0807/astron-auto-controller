@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "name": "편대텔레포트",
+  "description": "사냥터에서: L→편대탭→x편대 가입→닫기→편대원 ${tp_target} 텔레포트. 사냥 시작 직후, 그리고 스폰(사냥터 워프)에 갇혔을 때 재사용.",
+  "package": "",
+  "steps": [
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.257,
+        "y": 0.939,
+        "after_ms": 1500
+      },
+      "note": "L 버튼(플레이어 목록)"
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 0.6
+      }
+    },
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.146,
+        "y": 0.337,
+        "after_ms": 1200
+      },
+      "note": "편대 탭"
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 0.8
+      }
+    },
+    {
+      "type": "tap_template",
+      "params": {
+        "template": "sq_toodans.png",
+        "region": "0.0,0.30,0.40,0.48",
+        "threshold": 0.85,
+        "timeout": 8,
+        "taps": 2,
+        "tap_gap_ms": 160,
+        "after_ms": 1800,
+        "required": false
+      },
+      "note": "x 편대 더블탭"
+    },
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.499,
+        "y": 0.442,
+        "after_ms": 1500
+      },
+      "note": "편대참여(다이얼로그)"
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 5
+      }
+    },
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.378,
+        "y": 0.243,
+        "after_ms": 1500
+      },
+      "note": "닫기"
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 0.8
+      }
+    },
+    {
+      "type": "tap_template",
+      "params": {
+        "template": "${tp_target}",
+        "region": "0.18,0.0,0.52,0.14",
+        "threshold": 0.9,
+        "timeout": 8,
+        "after_ms": 1500
+      },
+      "note": "편대원 ${tp_target} 클릭"
+    },
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.499,
+        "y": 0.497,
+        "after_ms": 2500
+      },
+      "note": "텔레포트(다이얼로그)"
+    },
+    {
+      "type": "notify",
+      "params": {
+        "title": "사냥",
+        "message": "텔레포트 완료",
+        "level": "info"
+      }
+    }
+  ]
+}

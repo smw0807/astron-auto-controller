@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "name": "사냥시작",
-  "description": "마을에서 사냥 재개: 착륙→리스트→M6-1(1) 출격→편대(x/TooDans) 가입→편대원 ${tp_target} 텔레포트. 인스턴스별 변수 tp_target 필요.",
+  "description": "마을에서 사냥 재개. 착륙 실패(워프게이트 밖) 시 재접속 후 재착륙. 이후 리스트→M6-1(1)→출격→편대텔레포트.",
   "package": "",
   "steps": [
     {
       "type": "log",
       "params": {
-        "message": "사냥시작"
+        "message": "사냥시작: 착륙"
       }
     },
     {
@@ -27,6 +27,59 @@
             "after_ms": 2500
           },
           "note": "SHIFT 착륙"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 1.5
+      }
+    },
+    {
+      "type": "if_template",
+      "params": {
+        "template": "scr_briefing.png",
+        "region": "0.0,0.1,0.45,0.30",
+        "threshold": 0.85,
+        "negate": true
+      },
+      "note": "브리핑 안 뜸 = 워프 정보 없음",
+      "children": [
+        {
+          "type": "notify",
+          "params": {
+            "title": "사냥시작",
+            "message": "워프 정보 없음 → 재접속",
+            "level": "warn"
+          }
+        },
+        {
+          "type": "call_flow",
+          "params": {
+            "flow": "재접속"
+          }
+        },
+        {
+          "type": "wait",
+          "params": {
+            "seconds": 2
+          }
+        },
+        {
+          "type": "tap",
+          "params": {
+            "x": 0.96,
+            "y": 0.409,
+            "after_ms": 2500
+          },
+          "note": "재착륙 SHIFT"
+        },
+        {
+          "type": "wait",
+          "params": {
+            "seconds": 1.5
+          }
         }
       ]
     },
@@ -93,111 +146,9 @@
       }
     },
     {
-      "type": "tap",
+      "type": "call_flow",
       "params": {
-        "x": 0.257,
-        "y": 0.939,
-        "after_ms": 1500
-      },
-      "note": "L 버튼(플레이어 목록)"
-    },
-    {
-      "type": "wait",
-      "params": {
-        "seconds": 0.6
-      }
-    },
-    {
-      "type": "tap",
-      "params": {
-        "x": 0.146,
-        "y": 0.337,
-        "after_ms": 1200
-      },
-      "note": "편대 탭"
-    },
-    {
-      "type": "wait",
-      "params": {
-        "seconds": 0.8
-      }
-    },
-    {
-      "type": "tap_template",
-      "params": {
-        "template": "sq_toodans.png",
-        "region": "0.0,0.30,0.40,0.48",
-        "threshold": 0.85,
-        "timeout": 8,
-        "taps": 2,
-        "tap_gap_ms": 160,
-        "after_ms": 1800,
-        "required": false
-      },
-      "note": "x 편대(TooDans) 더블탭"
-    },
-    {
-      "type": "tap",
-      "params": {
-        "x": 0.499,
-        "y": 0.442,
-        "after_ms": 1500
-      },
-      "note": "편대참여(다이얼로그)"
-    },
-    {
-      "type": "log",
-      "params": {
-        "message": "편대 가입 요청 → 에분기1 승인 대기"
-      }
-    },
-    {
-      "type": "wait",
-      "params": {
-        "seconds": 5
-      }
-    },
-    {
-      "type": "tap",
-      "params": {
-        "x": 0.378,
-        "y": 0.243,
-        "after_ms": 1500
-      },
-      "note": "닫기"
-    },
-    {
-      "type": "wait",
-      "params": {
-        "seconds": 0.8
-      }
-    },
-    {
-      "type": "tap_template",
-      "params": {
-        "template": "${tp_target}",
-        "region": "0.18,0.0,0.52,0.14",
-        "threshold": 0.9,
-        "timeout": 8,
-        "after_ms": 1500
-      },
-      "note": "편대원 ${tp_target} 클릭"
-    },
-    {
-      "type": "tap",
-      "params": {
-        "x": 0.499,
-        "y": 0.497,
-        "after_ms": 2500
-      },
-      "note": "텔레포트(다이얼로그)"
-    },
-    {
-      "type": "notify",
-      "params": {
-        "title": "사냥 시작",
-        "message": "텔레포트 완료 → 매크로 사냥",
-        "level": "info"
+        "flow": "편대텔레포트"
       }
     },
     {

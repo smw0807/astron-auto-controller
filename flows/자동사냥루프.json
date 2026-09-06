@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "자동사냥루프",
-  "description": "10분 간격 실행. ① 화면 멈춤(프리징) 감지 → 재접속. ② 아니면 TAB 으로 지도 열어 마을(무기상점) 판별 → 마을이면 사냥시작.",
+  "description": "5분 간격. ① 화면 멈춤 → 재접속+사냥시작. ② 마을 → 사냥시작. ③ 사냥터 워프 갇힘 → 편대텔레포트. ④ 정상 사냥 → 대기.",
   "package": "",
   "steps": [
     {
@@ -17,14 +17,8 @@
         "threshold": 0.8,
         "samples": 3
       },
-      "note": "화면이 멈췄으면 = 튕김/프리징",
+      "note": "화면 멈춤 = 튕김/프리징",
       "children": [
-        {
-          "type": "log",
-          "params": {
-            "message": "화면 멈춤 감지 → 재접속"
-          }
-        },
         {
           "type": "notify",
           "params": {
@@ -80,7 +74,7 @@
             "threshold": 0.82,
             "negate": true
           },
-          "note": "한 번 더 시도",
+          "note": "한 번 더",
           "children": [
             {
               "type": "tap",
@@ -110,7 +104,7 @@
             {
               "type": "log",
               "params": {
-                "message": "마을 감지 → 500킬 종료, 사냥 재개"
+                "message": "마을 감지 → 사냥 재개"
               }
             },
             {
@@ -139,12 +133,6 @@
           ],
           "else_children": [
             {
-              "type": "log",
-              "params": {
-                "message": "사냥 중 - 이상 없음"
-              }
-            },
-            {
               "type": "if_template",
               "params": {
                 "template": "map_tabs.png",
@@ -160,6 +148,51 @@
                     "after_ms": 700
                   },
                   "note": "지도 닫기"
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "params": {
+                "seconds": 0.5
+              }
+            },
+            {
+              "type": "if_template",
+              "params": {
+                "template": "hg_warp.png",
+                "region": "0.25,0.15,0.5,0.55",
+                "threshold": 0.8
+              },
+              "note": "사냥터 워프에 갇힘? (죽어서 스폰으로 밀림)",
+              "children": [
+                {
+                  "type": "log",
+                  "params": {
+                    "message": "사냥터 워프 감지 → 재텔레포트"
+                  }
+                },
+                {
+                  "type": "notify",
+                  "params": {
+                    "title": "자동사냥",
+                    "message": "스폰 갇힘 → 재텔레포트",
+                    "level": "warn"
+                  }
+                },
+                {
+                  "type": "call_flow",
+                  "params": {
+                    "flow": "편대텔레포트"
+                  }
+                }
+              ],
+              "else_children": [
+                {
+                  "type": "log",
+                  "params": {
+                    "message": "사냥 중 - 이상 없음"
+                  }
                 }
               ]
             }
