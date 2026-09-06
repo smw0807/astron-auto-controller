@@ -1,66 +1,104 @@
 {
   "schema_version": 1,
   "name": "재접속",
-  "description": "접속 끊김 감지 시 게임 재실행 후 캐릭터 선택까지",
+  "description": "화면 멈춤/튕김 시 게임 강제종료 후 재로그인. 서버 +NSPACE+, 캐릭터 1번 슬롯.",
   "package": "",
   "steps": [
     {
-      "type": "log",
+      "type": "notify",
       "params": {
-        "message": "재접속 시작"
+        "title": "재접속",
+        "message": "게임 재시작",
+        "level": "warn"
       }
     },
     {
       "type": "stop_app",
       "params": {
-        "package": ""
-      },
-      "note": "패키지명 입력 필요"
+        "package": "com.ctugames.astron"
+      }
     },
     {
       "type": "wait",
       "params": {
-        "seconds": 2.0
+        "seconds": 3
       }
     },
     {
       "type": "launch_app",
       "params": {
-        "package": "",
-        "wait_s": 12.0
+        "package": "com.ctugames.astron",
+        "wait_s": 16
+      }
+    },
+    {
+      "type": "tap_template",
+      "params": {
+        "template": "login_ok.png",
+        "threshold": 0.8,
+        "timeout": 6,
+        "after_ms": 1500,
+        "required": false
       },
-      "note": "패키지명 입력 필요"
+      "note": "결제오류 OK"
     },
     {
-      "type": "tap_template",
+      "type": "tap",
       "params": {
-        "template": "btn_start_screen.png",
-        "timeout": 40,
-        "required": true,
-        "after_ms": 1500
-      }
+        "x": 0.693,
+        "y": 0.533,
+        "after_ms": 1200
+      },
+      "note": "+NSPACE+ 서버"
     },
     {
-      "type": "tap_template",
+      "type": "tap",
       "params": {
-        "template": "btn_char_select.png",
-        "timeout": 20,
-        "required": true,
-        "after_ms": 1500
-      }
+        "x": 0.75,
+        "y": 0.8,
+        "after_ms": 1200
+      },
+      "note": "월드 선택 버튼"
     },
     {
       "type": "wait_template",
       "params": {
-        "template": "hud_ingame.png",
-        "timeout": 30,
-        "required": true
+        "template": "scr_charlist.png",
+        "threshold": 0.85,
+        "timeout": 15
+      },
+      "note": "CHARACTER LIST 대기"
+    },
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.75,
+        "y": 0.454,
+        "after_ms": 1000
+      },
+      "note": "1번 캐릭터 슬롯"
+    },
+    {
+      "type": "tap",
+      "params": {
+        "x": 0.75,
+        "y": 0.624,
+        "after_ms": 2000
+      },
+      "note": "출격하기"
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 9
       }
     },
     {
-      "type": "log",
+      "type": "notify",
       "params": {
-        "message": "재접속 완료"
+        "title": "재접속",
+        "message": "로그인 완료",
+        "level": "info"
       }
     }
   ]

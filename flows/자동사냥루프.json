@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "자동사냥루프",
-  "description": "10분 간격 실행. TAB 으로 지도를 열어 마을(무기상점 텍스트)인지 확인. 마을이면 = 500킬 종료 → 사냥시작 호출. 아니면 지도 닫고 대기.",
+  "description": "10분 간격 실행. ① 화면 멈춤(프리징) 감지 → 재접속. ② 아니면 TAB 으로 지도 열어 마을(무기상점) 판별 → 마을이면 사냥시작.",
   "package": "",
   "steps": [
     {
@@ -11,87 +11,33 @@
       }
     },
     {
-      "type": "if_template",
+      "type": "if_frozen",
       "params": {
-        "template": "map_tabs.png",
-        "region": "0.0,0.19,0.14,0.09",
-        "threshold": 0.82,
-        "negate": true
+        "gap_s": 14,
+        "threshold": 0.8,
+        "samples": 3
       },
-      "children": [
-        {
-          "type": "tap",
-          "params": {
-            "x": 0.177,
-            "y": 0.939,
-            "after_ms": 1300
-          }
-        }
-      ]
-    },
-    {
-      "type": "wait",
-      "params": {
-        "seconds": 0.6
-      }
-    },
-    {
-      "type": "if_template",
-      "params": {
-        "template": "map_tabs.png",
-        "region": "0.0,0.19,0.14,0.09",
-        "threshold": 0.82,
-        "negate": true
-      },
-      "note": "한 번 더 시도",
-      "children": [
-        {
-          "type": "tap",
-          "params": {
-            "x": 0.177,
-            "y": 0.939,
-            "after_ms": 1300
-          }
-        }
-      ]
-    },
-    {
-      "type": "wait",
-      "params": {
-        "seconds": 0.5
-      }
-    },
-    {
-      "type": "if_template",
-      "params": {
-        "template": "map_village.png",
-        "region": "0.0,0.15,0.32,0.66",
-        "threshold": 0.82
-      },
-      "note": "마을 지도인가?",
+      "note": "화면이 멈췄으면 = 튕김/프리징",
       "children": [
         {
           "type": "log",
           "params": {
-            "message": "마을 감지 → 500킬 종료, 사냥 재개"
+            "message": "화면 멈춤 감지 → 재접속"
           }
         },
         {
           "type": "notify",
           "params": {
             "title": "자동사냥",
-            "message": "마을 감지 → 사냥 재개",
-            "level": "info"
+            "message": "화면 멈춤 → 재접속",
+            "level": "warn"
           }
         },
         {
-          "type": "tap",
+          "type": "call_flow",
           "params": {
-            "x": 0.177,
-            "y": 0.939,
-            "after_ms": 900
-          },
-          "note": "지도 닫기"
+            "flow": "재접속"
+          }
         },
         {
           "type": "call_flow",
@@ -102,17 +48,12 @@
       ],
       "else_children": [
         {
-          "type": "log",
-          "params": {
-            "message": "사냥 중 - 이상 없음"
-          }
-        },
-        {
           "type": "if_template",
           "params": {
             "template": "map_tabs.png",
             "region": "0.0,0.19,0.14,0.09",
-            "threshold": 0.82
+            "threshold": 0.82,
+            "negate": true
           },
           "children": [
             {
@@ -120,9 +61,107 @@
               "params": {
                 "x": 0.177,
                 "y": 0.939,
-                "after_ms": 700
+                "after_ms": 1300
+              }
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "params": {
+            "seconds": 0.6
+          }
+        },
+        {
+          "type": "if_template",
+          "params": {
+            "template": "map_tabs.png",
+            "region": "0.0,0.19,0.14,0.09",
+            "threshold": 0.82,
+            "negate": true
+          },
+          "note": "한 번 더 시도",
+          "children": [
+            {
+              "type": "tap",
+              "params": {
+                "x": 0.177,
+                "y": 0.939,
+                "after_ms": 1300
+              }
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "params": {
+            "seconds": 0.5
+          }
+        },
+        {
+          "type": "if_template",
+          "params": {
+            "template": "map_village.png",
+            "region": "0.0,0.15,0.32,0.66",
+            "threshold": 0.82
+          },
+          "note": "마을 지도인가?",
+          "children": [
+            {
+              "type": "log",
+              "params": {
+                "message": "마을 감지 → 500킬 종료, 사냥 재개"
+              }
+            },
+            {
+              "type": "notify",
+              "params": {
+                "title": "자동사냥",
+                "message": "마을 감지 → 사냥 재개",
+                "level": "info"
+              }
+            },
+            {
+              "type": "tap",
+              "params": {
+                "x": 0.177,
+                "y": 0.939,
+                "after_ms": 900
               },
               "note": "지도 닫기"
+            },
+            {
+              "type": "call_flow",
+              "params": {
+                "flow": "사냥시작"
+              }
+            }
+          ],
+          "else_children": [
+            {
+              "type": "log",
+              "params": {
+                "message": "사냥 중 - 이상 없음"
+              }
+            },
+            {
+              "type": "if_template",
+              "params": {
+                "template": "map_tabs.png",
+                "region": "0.0,0.19,0.14,0.09",
+                "threshold": 0.82
+              },
+              "children": [
+                {
+                  "type": "tap",
+                  "params": {
+                    "x": 0.177,
+                    "y": 0.939,
+                    "after_ms": 700
+                  },
+                  "note": "지도 닫기"
+                }
+              ]
             }
           ]
         }

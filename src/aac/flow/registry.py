@@ -150,6 +150,18 @@ _reg(StepSpec(
     summary_fmt="반복 x{count}",
 ))
 _reg(StepSpec(
+    "if_frozen", "만약 화면이 멈췄으면", "흐름",
+    params=[
+        ParamSpec("gap_s", "seconds", 12.0, "비교 간격(초)"),
+        ParamSpec("threshold", "float", 2.0, "차이 임계값",
+                  "두 스크린샷 평균 픽셀차. 이하면 멈춤으로 판정"),
+        ParamSpec("region", "region", "", "비교 영역 x,y,w,h", "비우면 전체 화면"),
+        ParamSpec("samples", "int", 2, "샘플 수", "3 이상이면 연속 프레임 모두 동일해야 멈춤"),
+    ],
+    has_children=True, has_else=True,
+    summary_fmt="IF 화면 멈춤 (간격 {gap_s}s)",
+))
+_reg(StepSpec(
     "repeat_until_template", "템플릿 나올 때까지 반복", "흐름",
     params=[
         ParamSpec("template", "template", "", "종료 템플릿"),

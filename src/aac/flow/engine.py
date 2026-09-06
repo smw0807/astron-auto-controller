@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import itertools
 import random
 import time
 from collections.abc import Callable
@@ -310,6 +311,57 @@ def _if_template(engine: FlowEngine, step: Step, p: dict) -> Outcome:
         ctx.depth -= 1
 
 
+def _crop_region(img: np.ndarray, region: str) -> np.ndarray:
+    region = (region or "").strip()
+    if not region:
+        return img
+    try:
+        rx, ry, rw, rh = (float(v) for v in region.split(","))
+    except ValueError:
+        return img
+    h, w = img.shape[:2]
+    return img[int(ry * h):int((ry + rh) * h), int(rx * w):int((rx + rw) * w)]
+
+
+def _if_frozen(engine: FlowEngine, step: Step, p: dict) -> Outcome:
+    ctx = engine.ctx
+    gap = float(p.get("gap_s", 12.0))
+    thr = float(p.get("threshold", 2.0))
+    region = engine._subst(str(p.get("region", "")))
+    samples = max(2, int(p.get("samples", 2)))
+
+    frames: list[np.ndarray] = []
+    for i in range(samples):
+        if i:
+            ctx.stop.sleep(gap / (samples - 1))
+            if ctx.stop.stopped:
+                return Outcome.STOP
+        img = ctx.screenshot(fresh=True)
+        if img is None:
+            engine._log("    [멈춤판정] 스크린샷 실패 → 멈춤 아님")
+            return engine._exec_steps(step.else_children)
+        frames.append(_crop_region(img, region))
+
+    frozen = True
+    max_diff = 0.0
+    for a, b in itertools.pairwise(frames):
+        if a.shape != b.shape:
+            frozen = False
+            break
+        diff = float(np.mean(np.abs(a.astype(np.int16) - b.astype(np.int16))))
+        max_diff = max(max_diff, diff)
+        if diff >= thr:
+            frozen = False
+            break
+    engine._log(f"    화면차 최대 {max_diff:.2f} (임계 {thr}) → 멈춤={frozen}")
+
+    ctx.depth += 1
+    try:
+        return engine._exec_steps(step.children if frozen else step.else_children)
+    finally:
+        ctx.depth -= 1
+
+
 def _loop(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     ctx = engine.ctx
     count = int(p.get("count", 1))
@@ -531,6 +583,7 @@ _EXECUTORS: dict[str, Callable[[FlowEngine, Step, dict], Outcome]] = {
     "wait": _wait,
     "wait_template": _wait_template,
     "if_template": _if_template,
+    "if_frozen": _if_frozen,
     "loop": _loop,
     "repeat_until_template": _repeat_until_template,
     "call_flow": _call_flow,
