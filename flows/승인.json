@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "승인",
-  "description": "편대장 인스턴스 전용. 가입 승인 팝업이 뜨면 승인. 3초 간격 무한 반복.",
+  "description": "편대장 인스턴스 전용. 가입 승인 팝업이 뜨면 요청자 이름에 'TooDan' 이 있을 때만 승인, 아니면 취소. 3초 간격 무한 반복.",
   "package": "",
   "steps": [
     {
@@ -13,23 +13,54 @@
       },
       "children": [
         {
-          "type": "tap_template",
+          "type": "if_template",
           "params": {
-            "template": "sq_approve_btn.png",
-            "region": "0.0,0.0,0.42,0.40",
-            "threshold": 0.88,
-            "timeout": 3,
-            "after_ms": 1500,
-            "required": false
-          }
-        },
-        {
-          "type": "notify",
-          "params": {
-            "title": "편대 승인",
-            "message": "가입 요청 승인함",
-            "level": "info"
-          }
+            "template": "sq_name_toodan.png",
+            "region": "0.12,0.005,0.13,0.055",
+            "threshold": 0.85
+          },
+          "note": "요청자 이름에 TooDan 포함?",
+          "children": [
+            {
+              "type": "tap_template",
+              "params": {
+                "template": "sq_approve_btn.png",
+                "region": "0.0,0.0,0.42,0.40",
+                "threshold": 0.88,
+                "timeout": 3,
+                "after_ms": 1500,
+                "required": false
+              },
+              "note": "승인"
+            },
+            {
+              "type": "notify",
+              "params": {
+                "title": "편대 승인",
+                "message": "TooDan 계열 가입 승인",
+                "level": "info"
+              }
+            }
+          ],
+          "else_children": [
+            {
+              "type": "tap",
+              "params": {
+                "x": 0.37,
+                "y": 0.237,
+                "after_ms": 1500
+              },
+              "note": "취소(거절)"
+            },
+            {
+              "type": "notify",
+              "params": {
+                "title": "가입 거절",
+                "message": "TooDan 아닌 가입 요청 거절",
+                "level": "warn"
+              }
+            }
+          ]
         }
       ]
     }
