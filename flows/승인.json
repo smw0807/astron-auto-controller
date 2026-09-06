@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "name": "승인",
+  "description": "편대장 인스턴스 전용. 가입 승인 팝업이 뜨면 승인. 3초 간격 무한 반복.",
+  "package": "",
+  "steps": [
+    {
+      "type": "if_template",
+      "params": {
+        "template": "sq_approve_btn.png",
+        "region": "0.0,0.0,0.42,0.40",
+        "threshold": 0.88
+      },
+      "children": [
+        {
+          "type": "tap_template",
+          "params": {
+            "template": "sq_approve_btn.png",
+            "region": "0.0,0.0,0.42,0.40",
+            "threshold": 0.88,
+            "timeout": 3,
+            "after_ms": 1500,
+            "required": false
+          }
+        },
+        {
+          "type": "notify",
+          "params": {
+            "title": "편대 승인",
+            "message": "가입 요청 승인함",
+            "level": "info"
+          }
+        }
+      ]
+    }
+  ]
+}

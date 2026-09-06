@@ -87,8 +87,10 @@ class RunContext:
 
 class FlowEngine:
     def __init__(self, device: Device, log: LogFn, stop: StopToken | None = None,
-                 notify: NotifyFn | None = None):
+                 notify: NotifyFn | None = None, init_vars: dict | None = None):
         self.ctx = RunContext(device=device, log=log, stop=stop or StopToken(), notify=notify)
+        if init_vars:
+            self.ctx.vars.update(init_vars)
         self._call_stack: list[str] = []
 
     # --- 진입점 -------------------------------------------------
@@ -149,25 +151,57 @@ class FlowEngine:
             out = out.replace(f"${{{k}}}", str(v))
         return out
 
-    def _match(self, template: str, threshold: float):
+    def _match(self, template: str, threshold: float, region: str = ""):
+        template = self._subst(template)
+        region = self._subst(region or "")
         img = self.ctx.screenshot()
         if img is None:
             return None
+        h, w = img.shape[:2]
+        ox = oy = 0
+        sub = img
+        region = (region or "").strip()
+        if region:
+            try:
+                rx, ry, rw, rh = (float(v) for v in region.split(","))
+                ox, oy = int(rx * w), int(ry * h)
+                sub = img[oy:oy + int(rh * h), ox:ox + int(rw * w)]
+            except (ValueError, TypeError):
+                self._log(f"  [region 형식 오류] {region}")
+                sub, ox, oy = img, 0, 0
+        if sub.size == 0:
+            return None
         try:
-            return find_template(img, template, threshold=threshold)
+            m = find_template(sub, template, threshold=threshold)
         except FileNotFoundError as exc:
             self._log(f"[템플릿 없음] {exc}")
             return None
+        if region and m is not None:
+            # 부분 좌표를 전체 화면 정규화 좌표로 환산
+            sh, sw = sub.shape[:2]
+            m.cx = (ox + m.cx * sw) / w
+            m.cy = (oy + m.cy * sh) / h
+        return m
 
 
 # ============================================================
 # 스텝 실행기
 # ============================================================
+def _do_taps(ctx: RunContext, x: float, y: float, taps: int, gap_ms: int) -> None:
+    x = min(max(x, 0.0), 1.0)
+    y = min(max(y, 0.0), 1.0)
+    for i in range(max(1, taps)):
+        if i:
+            time.sleep(max(0, gap_ms) / 1000)
+        ctx.device.tap(x, y)
+    ctx.invalidate_frame()
+
+
 def _tap(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     ctx = engine.ctx
     tpl = (p.get("template") or "").strip()
     if tpl:
-        m = engine._match(tpl, float(p.get("threshold", ctx.threshold)))
+        m = engine._match(tpl, float(p.get("threshold", ctx.threshold)), p.get("region", ""))
         if not m or not m.found:
             engine._log(f"  템플릿 '{tpl}' 못 찾음 → 탭 생략")
             return Outcome.CONTINUE
@@ -178,10 +212,7 @@ def _tap(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     if j:
         x += random.uniform(-j, j)
         y += random.uniform(-j, j)
-    x = min(max(x, 0.0), 1.0)
-    y = min(max(y, 0.0), 1.0)
-    ctx.device.tap(x, y)
-    ctx.invalidate_frame()
+    _do_taps(ctx, x, y, int(p.get("taps", 1) or 1), int(p.get("tap_gap_ms", 120)))
     ctx.stop.sleep(int(p.get("after_ms", 0)) / 1000)
     return Outcome.CONTINUE
 
@@ -192,13 +223,15 @@ def _tap_template(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     thr = float(p.get("threshold", ctx.threshold))
     timeout = float(p.get("timeout", 5.0))
     poll = int(p.get("poll_ms", 700)) / 1000
+    ox = float(p.get("offset_x", 0.0) or 0.0)
+    oy = float(p.get("offset_y", 0.0) or 0.0)
     end = time.monotonic() + timeout
     while not ctx.stop.stopped:
         ctx.invalidate_frame()
-        m = engine._match(tpl, thr)
+        m = engine._match(tpl, thr, p.get("region", ""))
         if m and m.found:
-            ctx.device.tap(m.cx, m.cy)
-            ctx.invalidate_frame()
+            _do_taps(ctx, m.cx + ox, m.cy + oy,
+                     int(p.get("taps", 1) or 1), int(p.get("tap_gap_ms", 120)))
             ctx.stop.sleep(int(p.get("after_ms", 0)) / 1000)
             return Outcome.CONTINUE
         if time.monotonic() >= end:
@@ -246,7 +279,7 @@ def _wait_template(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     end = time.monotonic() + timeout
     while not ctx.stop.stopped:
         ctx.invalidate_frame()
-        m = engine._match(tpl, thr)
+        m = engine._match(tpl, thr, p.get("region", ""))
         if m and m.found:
             return Outcome.CONTINUE
         if time.monotonic() >= end:
@@ -263,7 +296,7 @@ def _if_template(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     tpl = (p.get("template") or "").strip()
     thr = float(p.get("threshold", ctx.threshold))
     ctx.invalidate_frame()
-    m = engine._match(tpl, thr)
+    m = engine._match(tpl, thr, p.get("region", ""))
     present = bool(m and m.found)
     if p.get("negate", False):
         present = not present
@@ -308,7 +341,7 @@ def _repeat_until_template(engine: FlowEngine, step: Step, p: dict) -> Outcome:
             if ctx.stop.stopped:
                 return Outcome.STOP
             ctx.invalidate_frame()
-            m = engine._match(tpl, thr)
+            m = engine._match(tpl, thr, p.get("region", ""))
             if m and m.found:
                 engine._log(f"    종료 템플릿 발견 (반복 {i})")
                 return Outcome.CONTINUE

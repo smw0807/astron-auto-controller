@@ -68,22 +68,30 @@ _reg(StepSpec(
         *_XY,
         ParamSpec("template", "template", "", "템플릿(선택)",
                   "지정 시 좌표 대신 이 이미지를 찾아 중심을 탭"),
+        ParamSpec("region", "region", "", "검색영역 x,y,w,h", "비우면 전체 화면"),
+        ParamSpec("taps", "int", 1, "탭 횟수", "2 = 더블탭"),
+        ParamSpec("tap_gap_ms", "int", 120, "탭 간격(ms)", "더블탭 간격"),
         ParamSpec("jitter", "float", 0.0, "흔들기(0~1)", "탭 좌표 랜덤 오프셋"),
         ParamSpec("after_ms", "int", 400, "후 대기(ms)"),
     ],
-    summary_fmt="탭 ({x:.3f}, {y:.3f}) {template}",
+    summary_fmt="탭 ({x:.3f}, {y:.3f}) {template} x{taps}",
 ))
 _reg(StepSpec(
     "tap_template", "템플릿 탭", "입력",
     params=[
         ParamSpec("template", "template", "", "템플릿"),
+        ParamSpec("region", "region", "", "검색영역 x,y,w,h", "비우면 전체 화면"),
         ParamSpec("threshold", "float", 0.85, "임계값"),
         ParamSpec("timeout", "seconds", 5.0, "탐색 제한(초)"),
         ParamSpec("poll_ms", "int", 700, "폴링(ms)"),
+        ParamSpec("taps", "int", 1, "탭 횟수", "2 = 더블탭"),
+        ParamSpec("tap_gap_ms", "int", 120, "탭 간격(ms)"),
+        ParamSpec("offset_x", "float", 0.0, "x 오프셋", "매칭 중심에서 이동(정규화)"),
+        ParamSpec("offset_y", "float", 0.0, "y 오프셋"),
         ParamSpec("required", "bool", True, "실패 시 중단"),
         ParamSpec("after_ms", "int", 500, "후 대기(ms)"),
     ],
-    summary_fmt="템플릿 탭 [{template}] thr={threshold}",
+    summary_fmt="템플릿 탭 [{template}] thr={threshold} x{taps}",
 ))
 _reg(StepSpec(
     "swipe", "스와이프", "입력",
@@ -116,6 +124,7 @@ _reg(StepSpec(
     "wait_template", "템플릿 대기", "흐름",
     params=[
         ParamSpec("template", "template", "", "템플릿"),
+        ParamSpec("region", "region", "", "검색영역 x,y,w,h"),
         ParamSpec("threshold", "float", 0.85, "임계값"),
         ParamSpec("timeout", "seconds", 15.0, "제한(초)"),
         ParamSpec("poll_ms", "int", 800, "폴링(ms)"),
@@ -127,6 +136,7 @@ _reg(StepSpec(
     "if_template", "만약 템플릿이 보이면", "흐름",
     params=[
         ParamSpec("template", "template", "", "템플릿"),
+        ParamSpec("region", "region", "", "검색영역 x,y,w,h"),
         ParamSpec("threshold", "float", 0.85, "임계값"),
         ParamSpec("negate", "bool", False, "반대로(안 보이면)"),
     ],
@@ -143,6 +153,7 @@ _reg(StepSpec(
     "repeat_until_template", "템플릿 나올 때까지 반복", "흐름",
     params=[
         ParamSpec("template", "template", "", "종료 템플릿"),
+        ParamSpec("region", "region", "", "검색영역 x,y,w,h"),
         ParamSpec("threshold", "float", 0.85, "임계값"),
         ParamSpec("max_iterations", "int", 20, "최대 반복"),
         ParamSpec("iter_wait_ms", "int", 1000, "반복 간 대기(ms)"),

@@ -96,7 +96,8 @@ class RunnerManager(QObject):
             return False
 
         interval = SETTINGS.watch_interval_sec if interval_s is None else interval_s
-        t = RunnerThread(st.serial, flow, repeat=-1, interval_s=interval)
+        t = RunnerThread(st.serial, flow, repeat=-1, interval_s=interval,
+                         init_vars=SETTINGS.instance_vars.get(key, {}))
         t.log.connect(lambda m, k=key: self.log.emit(k, m))
         t.iteration.connect(lambda n, k=key: self._on_iteration(k, n))
         t.notify.connect(

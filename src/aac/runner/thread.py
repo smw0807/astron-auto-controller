@@ -14,12 +14,13 @@ class RunnerThread(QThread):
     finished_ok = Signal(bool)
 
     def __init__(self, serial: str, flow: Flow, repeat: int = 1,
-                 interval_s: float = 15.0, parent=None):
+                 interval_s: float = 15.0, init_vars: dict | None = None, parent=None):
         super().__init__(parent)
         self._serial = serial
         self._flow = flow
         self._repeat = repeat          # < 0 이면 무한
         self._interval = interval_s
+        self._init_vars = init_vars or {}
         self._stop = StopToken()
 
     def stop(self) -> None:
@@ -43,6 +44,7 @@ class RunnerThread(QThread):
             ok = FlowEngine(
                 dev, self.log.emit, self._stop,
                 notify=lambda t, m, lv: self.notify.emit(t, m, lv),
+                init_vars=self._init_vars,
             ).run(self._flow)
             if self._stop.stopped:
                 break
