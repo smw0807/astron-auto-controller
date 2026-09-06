@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from aac.bluestacks import scan_instances
 from aac.config import SETTINGS
+from aac.tools._console import setup as _console_setup
 
 
 def main() -> int:
+    _console_setup()
     print(f"adb      : {SETTINGS.resolve_adb()}")
     print(f"conf     : {SETTINGS.bluestacks_conf}")
     print("-" * 72)

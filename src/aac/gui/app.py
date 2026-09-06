@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QSplitter,
+    QStyle,
+    QSystemTrayIcon,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -26,6 +28,7 @@ from PySide6.QtWidgets import (
 
 from aac.adb import AdbClient, Device
 from aac.bluestacks import BlueStacksInstance
+from aac.config import SETTINGS
 from aac.gui.capture_view import CaptureView
 from aac.gui.dashboard import Dashboard
 from aac.gui.flow_editor import FlowEditor
@@ -229,6 +232,7 @@ class MainWindow(QMainWindow):
         self.resize(1320, 800)
 
         self.runner = RunnerManager(self)
+        self.runner.notify.connect(self._on_notify)
 
         self.capture_page = CapturePage()
         self.flow_page = FlowEditor()
@@ -242,6 +246,13 @@ class MainWindow(QMainWindow):
         tabs.addTab(self.dashboard, "대시보드")
         self.setCentralWidget(tabs)
 
+        self.tray = QSystemTrayIcon(self)
+        self.tray.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
+        self.tray.setToolTip("Astron Auto Controller")
+        if QSystemTrayIcon.isSystemTrayAvailable():
+            self.tray.show()
+
+        self.dashboard.scheduler.start()
         self.statusBar().showMessage("준비됨")
         self.capture_page.instances.scan()
 
@@ -249,6 +260,17 @@ class MainWindow(QMainWindow):
         self.flow_page.set_instances(instances)
         self.dashboard.set_instances(instances)
         self.statusBar().showMessage(f"인스턴스 {len(instances)}개")
+
+    def _on_notify(self, key: str, title: str, message: str, level: str) -> None:
+        if not SETTINGS.notifications_enabled:
+            return
+        icon = {
+            "error": QSystemTrayIcon.Critical,
+            "warn": QSystemTrayIcon.Warning,
+        }.get(level, QSystemTrayIcon.Information)
+        st = self.runner.state(key)
+        prefix = st.display_name or key
+        self.tray.showMessage(f"[{prefix}] {title}", message, icon, 6000)
 
     def closeEvent(self, event) -> None:
         self.capture_page.shutdown()

@@ -11,6 +11,7 @@ import time
 from aac.adb import AdbClient, Device
 from aac.bluestacks import scan_instances
 from aac.config import CAPTURES_DIR
+from aac.tools._console import setup as _console_setup
 
 
 def _resolve(name: str):
@@ -21,6 +22,7 @@ def _resolve(name: str):
 
 
 def main() -> int:
+    _console_setup()
     ap = argparse.ArgumentParser()
     ap.add_argument("name")
     ap.add_argument("--tap", nargs=2, type=float, metavar=("NX", "NY"))

@@ -29,6 +29,7 @@ class RunnerState:
 class RunnerManager(QObject):
     status_changed = Signal(str)          # key
     log = Signal(str, str)                # key, message
+    notify = Signal(str, str, str, str)   # key, title, message, level
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -98,6 +99,9 @@ class RunnerManager(QObject):
         t = RunnerThread(st.serial, flow, repeat=-1, interval_s=interval)
         t.log.connect(lambda m, k=key: self.log.emit(k, m))
         t.iteration.connect(lambda n, k=key: self._on_iteration(k, n))
+        t.notify.connect(
+            lambda title, msg, lv, k=key: self.notify.emit(k, title, msg, lv)
+        )
         t.finished_ok.connect(lambda ok, k=key: self._on_finished(k, ok))
         self._threads[key] = t
         st.status = "실행중"
@@ -137,7 +141,12 @@ class RunnerManager(QObject):
 
     def _on_finished(self, key: str, ok: bool) -> None:
         st = self.state(key)
+        was_running = st.status == "실행중"
         st.status = "정지"
         self._threads.pop(key, None)
         self.log.emit(key, f"■ 종료 ({'정상' if ok else '중단/오류'})")
+        # 사용자가 정지를 누르지 않았는데 멈췄으면(=플로우가 STOP 반환) 알림
+        if was_running and not ok:
+            name = st.display_name or key
+            self.notify.emit(key, "감시 중단됨", f"{name}: 플로우가 예기치 않게 종료", "error")
         self.status_changed.emit(key)

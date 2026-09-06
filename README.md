@@ -5,7 +5,7 @@
 
 목적: 500킬 후 자동사냥이 종료되고 마을로 이동되면 → 자동으로 사냥터 복귀 & 사냥 재개.
 
-## 상태 (Phase 3 완료)
+## 상태 (Phase 4 완료)
 
 - [x] BlueStacks 인스턴스 스캐너 (`bluestacks.conf` 파싱 + `HD-Player.exe` 프로세스 매칭 + adb 연결)
 - [x] ADB 제어 계층 (`HD-Adb.exe` 래퍼, 인스턴스별 tap / swipe / keyevent / screencap / wm size)
@@ -14,9 +14,9 @@
 - [x] PySide6 GUI: 인스턴스 목록 + 라이브 스크린샷 + 클릭→좌표 + 영역 선택 + 탭 테스트
 - [x] **플로우 모델 + JSON 직렬화** (스텝 트리, if/loop/else 블록)
 - [x] **실행 엔진** (백그라운드 스레드, 협조적 취소, 스크린샷 캐시)
-- [x] **코어 스텝 16종**: tap / tap_template / swipe / key / text / wait / wait_template /
+- [x] **코어 스텝 21종**: tap / tap_template / swipe / key / text / wait / wait_template /
       if_template / loop / repeat_until_template / call_flow / launch_app / stop_app /
-      ocr_region / screenshot / log
+      ocr_region / set_var / if_var / repeat_until_var / notify / screenshot / log
 - [x] **복합 이벤트 스켈레톤**: 재접속 / 사냥터이동 / 텔레포트 / 사냥시작 / 무기상점이동 /
       아이템수리 / 자동사냥루프 (서브플로우, `call_flow` 로 조합)
 - [x] **플로우 편집기 탭** (트리 편집 + 속성 폼 자동생성 + 대상 인스턴스에서 실행/반복)
@@ -26,7 +26,12 @@
       무한 반복 실행, 오프라인 자동 중지
 - [x] **대시보드 탭**: 인스턴스 × 배정 플로우 × 상태 × 반복수, 개별/전체 시작·정지, 통합 로그
 - [x] **헤드리스 감시** (`aac.tools.watch` / `watch.bat`): GUI 없이 배정된 플로우 실행
-- [ ] Phase 4: 블록 캔버스(드래그) 에디터 / 스케줄링 / 데스크톱 알림 / 킬수 OCR 트리거
+- [x] **변수/OCR 트리거**: `ocr_region` 로 킬수 읽어 `${kills}` 변수 저장,
+      `if_var ${kills} >= 490`, `repeat_until_var` 로 조건 분기 (500킬 감지)
+- [x] **데스크톱 알림**: `notify` 스텝 + 트레이 알림, 감시가 예기치 않게 멈추면 자동 경고
+- [x] **스케줄러**: 활성 시간대(예 `09:00-23:30`) / 일일 재시작 / N분마다 재시작 (대시보드에서 설정)
+- [x] **편집기 개선**: 우클릭 메뉴(켜기·끄기/복제/삭제), JSON 직접 보기·편집
+- [ ] Phase 5: 블록 캔버스(드래그) 에디터 / 인스턴스 그룹 프로필 / 원격 모니터링
 
 ## 실행 (가장 간단)
 
@@ -67,6 +72,10 @@ py -3.13 -m venv .venv
 → (내구도 낮으면) `무기상점이동`+`아이템수리` → `사냥터이동` → `사냥시작` 을 차례로 호출.
 대시보드/`watch.bat` 가 이 루프를 인스턴스별로 `watch_interval_sec` 간격으로 무한 반복.
 
+**킬수 기반 감지(대안)**: `ocr_region` 으로 킬 카운터 영역을 읽어 `${kills}` 저장 →
+`if_var ${kills} >= 490` 이면 `notify` 로 미리 알림 + 복귀 준비. 마을 이동은 템플릿으로,
+"곧 끝남" 예고는 OCR 로 조합하는 것을 권장.
+
 ## 스텝 타입
 
 | 분류 | 스텝 |
@@ -74,8 +83,9 @@ py -3.13 -m venv .venv
 | 입력 | `tap`(좌표/템플릿), `tap_template`, `swipe`, `key`, `text` |
 | 흐름 | `wait`, `wait_template`, `if_template`(+else), `loop`, `repeat_until_template`, `call_flow` |
 | 앱 | `launch_app`, `stop_app` |
-| 인식 | `ocr_region`(숫자→변수), `screenshot` |
-| 기타 | `log` |
+| 인식 | `ocr_region`(숫자→`${var}` / `${var}_int` / `${var}_prev`), `screenshot` |
+| 변수 | `set_var`(`${x}` 치환), `if_var`(`== != >= <= > < contains empty not_empty changed`), `repeat_until_var` |
+| 기타 | `notify`(트레이 알림), `log` |
 
 ## 설정 (`settings.json`, 최초 실행 시 자동 생성 · git 무시)
 
@@ -87,6 +97,8 @@ py -3.13 -m venv .venv
 | `instance_flows` | 인스턴스 key → 플로우 파일 매핑 |
 | `watch_interval_sec` | 감시 루프 주기 |
 | `template_match_threshold` | 템플릿 매칭 임계값 (기본 0.85) |
+| `notifications_enabled` | 데스크톱(트레이) 알림 |
+| `schedule_enabled` / `active_hours` / `daily_restart_time` / `periodic_restart_min` | 스케줄러 |
 
 ## 구조
 
@@ -96,7 +108,7 @@ src/aac/
   bluestacks/  인스턴스 스캐너
   vision/      capture / template(매칭·크롭) / ocr(RapidOCR)
   flow/        model(Flow/Step+JSON) / registry(스텝 스펙) / engine(실행) / events(스켈레톤)
-  runner/      thread(RunnerThread) / manager(RunnerManager: 배정·감시 루프)
+  runner/      thread(RunnerThread) / manager(RunnerManager: 배정·감시) / scheduler
   gui/         app / capture_view / instances_panel / flow_editor / param_form /
                template_panel / dashboard / workers
   tools/       CLI (scan / shoot / scaffold / flow / watch)

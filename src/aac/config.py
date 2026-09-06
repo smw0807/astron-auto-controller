@@ -49,6 +49,13 @@ class Settings:
     # 감시 루프 주기(초)
     watch_interval_sec: float = 20.0
     template_match_threshold: float = 0.85
+    # 데스크톱 알림
+    notifications_enabled: bool = True
+    # 스케줄러
+    schedule_enabled: bool = False
+    active_hours: str = ""            # "09:00-23:30" 형식. 이 시간대에만 실행
+    periodic_restart_min: int = 0     # N분마다 전체 재시작 (0=끔)
+    daily_restart_time: str = ""      # "06:00" — 매일 이 시각에 전체 재시작
 
     @classmethod
     def load(cls) -> Settings:

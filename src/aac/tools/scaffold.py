@@ -8,9 +8,11 @@ from __future__ import annotations
 import argparse
 
 from aac.flow.events import scaffold_all
+from aac.tools._console import setup as _console_setup
 
 
 def main() -> int:
+    _console_setup()
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()

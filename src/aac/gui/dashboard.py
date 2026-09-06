@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QPlainTextEdit,
     QPushButton,
     QSpinBox,
@@ -18,7 +21,7 @@ from PySide6.QtWidgets import (
 
 from aac.config import SETTINGS
 from aac.flow import Flow
-from aac.runner import RunnerManager
+from aac.runner import RunnerManager, Scheduler
 
 _COLS = ["별명", "key", "온라인", "플로우", "상태", "반복", ""]
 
@@ -46,13 +49,47 @@ class Dashboard(QWidget):
         self.reload_flows_btn = QPushButton("플로우 목록 새로고침")
         self.reload_flows_btn.clicked.connect(self._reload_flow_combos)
 
+        self.notif_chk = QCheckBox("데스크톱 알림")
+        self.notif_chk.setChecked(SETTINGS.notifications_enabled)
+        self.notif_chk.toggled.connect(self._save_notif)
+
         top = QHBoxLayout()
         top.addWidget(QLabel("감시 간격"))
         top.addWidget(self.interval_spin)
         top.addWidget(self.start_all_btn)
         top.addWidget(self.stop_all_btn)
         top.addStretch(1)
+        top.addWidget(self.notif_chk)
         top.addWidget(self.reload_flows_btn)
+
+        # --- 스케줄러 행 ---
+        self.sched_chk = QCheckBox("스케줄 사용")
+        self.sched_chk.setChecked(SETTINGS.schedule_enabled)
+        self.sched_chk.toggled.connect(self._save_sched)
+        self.active_hours_edit = QLineEdit(SETTINGS.active_hours)
+        self.active_hours_edit.setPlaceholderText("활성시간 09:00-23:30")
+        self.active_hours_edit.setFixedWidth(140)
+        self.active_hours_edit.editingFinished.connect(self._save_sched)
+        self.daily_edit = QLineEdit(SETTINGS.daily_restart_time)
+        self.daily_edit.setPlaceholderText("일일재시작 06:00")
+        self.daily_edit.setFixedWidth(110)
+        self.daily_edit.editingFinished.connect(self._save_sched)
+        self.periodic_spin = QSpinBox()
+        self.periodic_spin.setRange(0, 1440)
+        self.periodic_spin.setValue(SETTINGS.periodic_restart_min)
+        self.periodic_spin.setSuffix(" 분마다 재시작")
+        self.periodic_spin.setSpecialValueText("주기재시작 끔")
+        self.periodic_spin.valueChanged.connect(self._save_sched)
+
+        sched = QHBoxLayout()
+        sched.addWidget(self.sched_chk)
+        sched.addWidget(self.active_hours_edit)
+        sched.addWidget(self.daily_edit)
+        sched.addWidget(self.periodic_spin)
+        sched.addStretch(1)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
 
         # --- 테이블 ---
         self.table = QTableWidget(0, len(_COLS))
@@ -72,9 +109,15 @@ class Dashboard(QWidget):
         lay = QVBoxLayout(self)
         lay.setContentsMargins(6, 6, 6, 6)
         lay.addLayout(top)
+        lay.addLayout(sched)
+        lay.addWidget(line)
         lay.addWidget(self.table, 2)
         lay.addWidget(QLabel("통합 로그"))
         lay.addWidget(self.log, 1)
+
+        # 스케줄러 (MainWindow 가 start() 호출)
+        self.scheduler = Scheduler(self.mgr, self)
+        self.scheduler.log.connect(lambda m: self.log.appendPlainText(m))
 
     # --- 외부에서 인스턴스 주입 -----------------------------
     def set_instances(self, instances: list) -> None:
@@ -159,5 +202,18 @@ class Dashboard(QWidget):
         SETTINGS.watch_interval_sec = float(v)
         SETTINGS.save()
 
+    def _save_notif(self, on: bool) -> None:
+        SETTINGS.notifications_enabled = on
+        SETTINGS.save()
+
+    def _save_sched(self, *_) -> None:
+        SETTINGS.schedule_enabled = self.sched_chk.isChecked()
+        SETTINGS.active_hours = self.active_hours_edit.text().strip()
+        SETTINGS.daily_restart_time = self.daily_edit.text().strip()
+        SETTINGS.periodic_restart_min = self.periodic_spin.value()
+        SETTINGS.save()
+        self.scheduler.tick()
+
     def shutdown(self) -> None:
+        self.scheduler.stop()
         self.mgr.shutdown()

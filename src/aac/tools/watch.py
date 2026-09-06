@@ -15,9 +15,11 @@ from PySide6.QtCore import QCoreApplication
 
 from aac.bluestacks import scan_instances
 from aac.runner import RunnerManager
+from aac.tools._console import setup as _console_setup
 
 
 def main() -> int:
+    _console_setup()
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="*", default=None, help="특정 인스턴스(별명/key)만")
     ap.add_argument("--interval", type=float, default=None)

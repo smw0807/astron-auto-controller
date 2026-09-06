@@ -21,6 +21,7 @@ from aac.flow.registry import get_step_spec
 from aac.vision.template import find_template
 
 LogFn = Callable[[str], None]
+NotifyFn = Callable[[str, str, str], None]  # title, message, level
 
 # Android KEYCODE 별칭
 _KEYCODES = {
@@ -61,6 +62,7 @@ class RunContext:
     device: Device
     log: LogFn
     stop: StopToken
+    notify: NotifyFn | None = None
     templates_dir: Path = TEMPLATES_DIR
     threshold: float = field(default_factory=lambda: SETTINGS.template_match_threshold)
     vars: dict[str, object] = field(default_factory=dict)
@@ -84,8 +86,9 @@ class RunContext:
 
 
 class FlowEngine:
-    def __init__(self, device: Device, log: LogFn, stop: StopToken | None = None):
-        self.ctx = RunContext(device=device, log=log, stop=stop or StopToken())
+    def __init__(self, device: Device, log: LogFn, stop: StopToken | None = None,
+                 notify: NotifyFn | None = None):
+        self.ctx = RunContext(device=device, log=log, stop=stop or StopToken(), notify=notify)
         self._call_stack: list[str] = []
 
     # --- 진입점 -------------------------------------------------
@@ -131,6 +134,20 @@ class FlowEngine:
     # --- 유틸 -------------------------------------------------
     def _log(self, msg: str) -> None:
         self.ctx.log(msg)
+
+    def _notify(self, title: str, message: str, level: str = "info") -> None:
+        self._log(f"  🔔 [{level}] {title}: {message}")
+        if self.ctx.notify:
+            self.ctx.notify(title, message, level)
+
+    def _subst(self, text: str) -> str:
+        """${var} 를 현재 변수값으로 치환."""
+        if "${" not in text:
+            return text
+        out = text
+        for k, v in self.ctx.vars.items():
+            out = out.replace(f"${{{k}}}", str(v))
+        return out
 
     def _match(self, template: str, threshold: float):
         img = self.ctx.screenshot()
@@ -364,8 +381,93 @@ def _ocr_region(engine: FlowEngine, step: Step, p: dict) -> Outcome:
         return Outcome.CONTINUE
     text = read_text(crop, digits_only=bool(p.get("digits_only", True)))
     var = (p.get("var") or "ocr").strip()
+    prev = ctx.vars.get(var)
     ctx.vars[var] = text
+    ctx.vars[f"{var}_prev"] = prev
+    try:
+        ctx.vars[f"{var}_int"] = int("".join(c for c in text if c.isdigit()) or "0")
+    except ValueError:
+        pass
     engine._log(f"  OCR ${var} = '{text}'")
+    return Outcome.CONTINUE
+
+
+# --- 변수 비교 -------------------------------------------------
+def _compare(a: object, op: str, b: str) -> bool:
+    op = op.strip()
+    sa = "" if a is None else str(a)
+    if op == "empty":
+        return sa == ""
+    if op == "not_empty":
+        return sa != ""
+    if op == "contains":
+        return b in sa
+    if op == "changed":
+        return sa != b  # value 칸에 이전값을 넣어 쓰거나 ${var_prev} 활용
+    # 숫자 우선
+    try:
+        fa, fb = float(sa), float(b)
+        return {
+            "==": fa == fb, "!=": fa != fb, ">=": fa >= fb,
+            "<=": fa <= fb, ">": fa > fb, "<": fa < fb,
+        }.get(op, False)
+    except ValueError:
+        return {"==": sa == b, "!=": sa != b}.get(op, False)
+
+
+def _set_var(engine: FlowEngine, step: Step, p: dict) -> Outcome:
+    var = (p.get("var") or "x").strip()
+    engine.ctx.vars[var] = engine._subst(str(p.get("value", "")))
+    engine._log(f"  ${var} = {engine.ctx.vars[var]!r}")
+    return Outcome.CONTINUE
+
+
+def _if_var(engine: FlowEngine, step: Step, p: dict) -> Outcome:
+    ctx = engine.ctx
+    var = (p.get("var") or "").strip()
+    val = engine._subst(str(p.get("value", "")))
+    present = _compare(ctx.vars.get(var), str(p.get("op", "==")), val)
+    engine._log(f"    ${var}={ctx.vars.get(var)!r} → {present}")
+    ctx.depth += 1
+    try:
+        return engine._exec_steps(step.children if present else step.else_children)
+    finally:
+        ctx.depth -= 1
+
+
+def _repeat_until_var(engine: FlowEngine, step: Step, p: dict) -> Outcome:
+    ctx = engine.ctx
+    var = (p.get("var") or "").strip()
+    op = str(p.get("op", ">="))
+    max_it = int(p.get("max_iterations", 60))
+    iter_wait = int(p.get("iter_wait_ms", 1000)) / 1000
+    ctx.depth += 1
+    try:
+        for i in range(max_it):
+            if ctx.stop.stopped:
+                return Outcome.STOP
+            val = engine._subst(str(p.get("value", "")))
+            if _compare(ctx.vars.get(var), op, val):
+                engine._log(f"    조건 충족 (반복 {i})")
+                return Outcome.CONTINUE
+            out = engine._exec_steps(step.children)
+            if out == Outcome.STOP:
+                return Outcome.STOP
+            if out == Outcome.BREAK:
+                return Outcome.CONTINUE
+            ctx.stop.sleep(iter_wait)
+        engine._log("    [최대 반복 도달]")
+    finally:
+        ctx.depth -= 1
+    return Outcome.CONTINUE
+
+
+def _notify(engine: FlowEngine, step: Step, p: dict) -> Outcome:
+    engine._notify(
+        engine._subst(str(p.get("title", ""))),
+        engine._subst(str(p.get("message", ""))),
+        str(p.get("level", "info")),
+    )
     return Outcome.CONTINUE
 
 
@@ -402,6 +504,10 @@ _EXECUTORS: dict[str, Callable[[FlowEngine, Step, dict], Outcome]] = {
     "launch_app": _launch_app,
     "stop_app": _stop_app,
     "ocr_region": _ocr_region,
+    "set_var": _set_var,
+    "if_var": _if_var,
+    "repeat_until_var": _repeat_until_var,
+    "notify": _notify,
     "screenshot": _screenshot,
     "log": _log_step,
 }

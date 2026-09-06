@@ -4,6 +4,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -47,6 +49,8 @@ class FlowEditor(QWidget):
         self.save_btn.clicked.connect(self._save)
         self.scaffold_btn = QPushButton("이벤트 스켈레톤 생성")
         self.scaffold_btn.clicked.connect(self._scaffold)
+        self.json_btn = QPushButton("JSON")
+        self.json_btn.clicked.connect(self._edit_json)
         self.reload_btn = QPushButton("↻")
         self.reload_btn.setFixedWidth(28)
         self.reload_btn.clicked.connect(self.refresh_flow_list)
@@ -57,6 +61,7 @@ class FlowEditor(QWidget):
         top.addWidget(self.reload_btn)
         top.addWidget(self.new_btn)
         top.addWidget(self.save_btn)
+        top.addWidget(self.json_btn)
         top.addWidget(self.scaffold_btn)
 
         # --- 좌: 트리 + 툴바 ---
@@ -64,6 +69,8 @@ class FlowEditor(QWidget):
         self.tree.setHeaderLabels(["스텝"])
         self.tree.setColumnCount(1)
         self.tree.currentItemChanged.connect(self._on_tree_select)
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self._tree_context_menu)
 
         self.add_btn = QPushButton("＋ 스텝")
         self.add_btn.clicked.connect(self._show_add_menu)
@@ -339,6 +346,55 @@ class FlowEditor(QWidget):
             return
         (it.parent() or self.tree.invisibleRootItem()).removeChild(it)
         self._commit_tree_to_model()
+
+    def _toggle_enabled(self) -> None:
+        it = self._current_real_item()
+        if not it:
+            return
+        step: Step = it.data(0, ROLE_STEP)
+        step.enabled = not step.enabled
+        it.setForeground(0, Qt.gray if not step.enabled else self.tree.palette().text().color())
+        it.setText(0, self._summary(step))
+        self._commit_tree_to_model()
+
+    def _tree_context_menu(self, pos) -> None:
+        it = self._current_real_item()
+        if not it:
+            return
+        step: Step = it.data(0, ROLE_STEP)
+        menu = QMenu(self)
+        menu.addAction("끄기" if step.enabled else "켜기", self._toggle_enabled)
+        menu.addAction("복제", self._duplicate)
+        menu.addAction("삭제", self._delete_current)
+        menu.exec(self.tree.viewport().mapToGlobal(pos))
+
+    def _edit_json(self) -> None:
+        if self._flow is None:
+            return
+        self._commit_tree_to_model()
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"JSON — {self._flow.name}")
+        dlg.resize(640, 560)
+        editor = QPlainTextEdit(self._flow.to_json())
+        editor.setLineWrapMode(QPlainTextEdit.NoWrap)
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(editor)
+        lay.addWidget(buttons)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        try:
+            new_flow = Flow.from_json(editor.toPlainText())
+        except (ValueError, KeyError) as exc:
+            QMessageBox.warning(self, "JSON 오류", str(exc))
+            return
+        new_flow.name = self._flow.name
+        self._flow = new_flow
+        self._flow.save()
+        self._rebuild_tree()
+        self._log("JSON 편집 반영됨")
 
     def _move(self, delta: int) -> None:
         it = self._current_real_item()

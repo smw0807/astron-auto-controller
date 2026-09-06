@@ -10,6 +10,7 @@ from aac.flow import Flow, FlowEngine, StopToken
 class RunnerThread(QThread):
     log = Signal(str)
     iteration = Signal(int)       # 반복 시작 시 회차(1-base)
+    notify = Signal(str, str, str)  # title, message, level
     finished_ok = Signal(bool)
 
     def __init__(self, serial: str, flow: Flow, repeat: int = 1,
@@ -39,7 +40,10 @@ class RunnerThread(QThread):
             if self._repeat != 1:
                 tag = "무한" if self._repeat < 0 else f"{n}/{self._repeat}"
                 self.log.emit(f"─── 반복 {tag} ───")
-            ok = FlowEngine(dev, self.log.emit, self._stop).run(self._flow)
+            ok = FlowEngine(
+                dev, self.log.emit, self._stop,
+                notify=lambda t, m, lv: self.notify.emit(t, m, lv),
+            ).run(self._flow)
             if self._stop.stopped:
                 break
             if self._repeat < 0 or n < self._repeat:

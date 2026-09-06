@@ -11,6 +11,7 @@ import time
 from aac.adb import AdbClient, Device
 from aac.bluestacks import scan_instances
 from aac.flow import Flow, FlowEngine, StopToken
+from aac.tools._console import setup as _console_setup
 
 
 def _resolve_serial(name: str) -> str | None:
@@ -21,6 +22,7 @@ def _resolve_serial(name: str) -> str | None:
 
 
 def main() -> int:
+    _console_setup()
     ap = argparse.ArgumentParser()
     ap.add_argument("flow")
     ap.add_argument("instance")

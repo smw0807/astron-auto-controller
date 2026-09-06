@@ -185,6 +185,48 @@ _reg(StepSpec(
     params=[ParamSpec("label", "str", "", "파일 라벨")],
     summary_fmt="스크린샷 {label}",
 ))
+
+_reg(StepSpec(
+    "set_var", "변수 설정", "변수",
+    params=[
+        ParamSpec("var", "str", "x", "변수명"),
+        ParamSpec("value", "str", "", "값", "${다른변수} 치환 가능"),
+    ],
+    summary_fmt="${var} = {value}",
+))
+_reg(StepSpec(
+    "if_var", "만약 변수가 (조건)", "변수",
+    params=[
+        ParamSpec("var", "str", "kills", "변수명"),
+        ParamSpec("op", "str", ">=", "연산자",
+                  "== != >= <= > <  contains  empty  not_empty  changed"),
+        ParamSpec("value", "str", "490", "비교값"),
+    ],
+    has_children=True, has_else=True,
+    summary_fmt="IF ${var} {op} {value}",
+))
+_reg(StepSpec(
+    "repeat_until_var", "변수 조건까지 반복", "변수",
+    params=[
+        ParamSpec("var", "str", "kills", "변수명"),
+        ParamSpec("op", "str", ">=", "연산자"),
+        ParamSpec("value", "str", "490", "비교값"),
+        ParamSpec("max_iterations", "int", 60, "최대 반복"),
+        ParamSpec("iter_wait_ms", "int", 1000, "반복 간 대기(ms)"),
+    ],
+    has_children=True,
+    summary_fmt="~ ${var} {op} {value} 까지 (최대 {max_iterations})",
+))
+
+_reg(StepSpec(
+    "notify", "알림", "기타",
+    params=[
+        ParamSpec("title", "str", "", "제목"),
+        ParamSpec("message", "str", "", "내용"),
+        ParamSpec("level", "str", "info", "수준", "info / warn / error"),
+    ],
+    summary_fmt="🔔 {title}: {message}",
+))
 _reg(StepSpec(
     "log", "로그", "기타",
     params=[ParamSpec("message", "str", "", "메시지")],
