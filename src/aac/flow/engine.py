@@ -323,6 +323,36 @@ def _crop_region(img: np.ndarray, region: str) -> np.ndarray:
     return img[int(ry * h):int((ry + rh) * h), int(rx * w):int((rx + rw) * w)]
 
 
+def _if_pixels(engine: FlowEngine, step: Step, p: dict) -> Outcome:
+    ctx = engine.ctx
+    img = ctx.screenshot(fresh=True)
+    if img is None:
+        return engine._exec_steps(step.else_children)
+    sub = _crop_region(img, engine._subst(str(p.get("region", "0,0,1,1"))))
+    if sub.size == 0:
+        return engine._exec_steps(step.else_children)
+    try:
+        cb, cg, cr = (int(v) for v in str(p.get("color", "255,255,255")).split(","))
+    except ValueError:
+        engine._log("  [if_pixels] color 형식 오류 (b,g,r)")
+        return engine._exec_steps(step.else_children)
+    tol = int(p.get("tolerance", 40))
+    b, g, r = sub[:, :, 0].astype(np.int16), sub[:, :, 1].astype(np.int16), sub[:, :, 2].astype(np.int16)
+    mask = (
+        (np.abs(b - cb) <= tol) & (np.abs(g - cg) <= tol) & (np.abs(r - cr) <= tol)
+    )
+    count = int(mask.sum())
+    present = count >= int(p.get("min_count", 6))
+    if p.get("negate", False):
+        present = not present
+    engine._log(f"    색 픽셀 {count}개 → {present}")
+    ctx.depth += 1
+    try:
+        return engine._exec_steps(step.children if present else step.else_children)
+    finally:
+        ctx.depth -= 1
+
+
 def _if_frozen(engine: FlowEngine, step: Step, p: dict) -> Outcome:
     ctx = engine.ctx
     gap = float(p.get("gap_s", 12.0))
@@ -583,6 +613,7 @@ _EXECUTORS: dict[str, Callable[[FlowEngine, Step, dict], Outcome]] = {
     "wait": _wait,
     "wait_template": _wait_template,
     "if_template": _if_template,
+    "if_pixels": _if_pixels,
     "if_frozen": _if_frozen,
     "loop": _loop,
     "repeat_until_template": _repeat_until_template,

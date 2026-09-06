@@ -150,6 +150,18 @@ _reg(StepSpec(
     summary_fmt="반복 x{count}",
 ))
 _reg(StepSpec(
+    "if_pixels", "만약 특정 색 픽셀이 있으면", "흐름",
+    params=[
+        ParamSpec("region", "region", "0,0,1,1", "영역 x,y,w,h"),
+        ParamSpec("color", "str", "255,255,255", "BGR 색 (b,g,r)"),
+        ParamSpec("tolerance", "int", 40, "채널별 허용 오차"),
+        ParamSpec("min_count", "int", 6, "최소 픽셀 수"),
+        ParamSpec("negate", "bool", False, "반대로"),
+    ],
+    has_children=True, has_else=True,
+    summary_fmt="IF 색 {color}±{tolerance} ≥ {min_count}px @ {region}",
+))
+_reg(StepSpec(
     "if_frozen", "만약 화면이 멈췄으면", "흐름",
     params=[
         ParamSpec("gap_s", "seconds", 12.0, "비교 간격(초)"),

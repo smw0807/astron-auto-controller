@@ -14,7 +14,7 @@
       "type": "if_frozen",
       "params": {
         "gap_s": 14,
-        "threshold": 0.8,
+        "threshold": 0.3,
         "samples": 3
       },
       "note": "화면 멈춤 = 튕김/프리징",
@@ -49,6 +49,7 @@
             "threshold": 0.82,
             "negate": true
           },
+          "note": "지도 닫혀 있으면 열기",
           "children": [
             {
               "type": "tap",
@@ -74,7 +75,7 @@
             "threshold": 0.82,
             "negate": true
           },
-          "note": "한 번 더",
+          "note": "한 번 더 시도",
           "children": [
             {
               "type": "tap",
@@ -89,7 +90,7 @@
         {
           "type": "wait",
           "params": {
-            "seconds": 0.5
+            "seconds": 0.6
           }
         },
         {
@@ -99,14 +100,8 @@
             "region": "0.0,0.15,0.32,0.66",
             "threshold": 0.82
           },
-          "note": "마을 지도인가?",
+          "note": "마을 지도?",
           "children": [
-            {
-              "type": "log",
-              "params": {
-                "message": "마을 감지 → 사냥 재개"
-              }
-            },
             {
               "type": "notify",
               "params": {
@@ -116,13 +111,23 @@
               }
             },
             {
-              "type": "tap",
+              "type": "if_template",
               "params": {
-                "x": 0.177,
-                "y": 0.939,
-                "after_ms": 900
+                "template": "map_tabs.png",
+                "region": "0.0,0.19,0.14,0.09",
+                "threshold": 0.82
               },
-              "note": "지도 닫기"
+              "note": "지도 열려 있으면 닫기",
+              "children": [
+                {
+                  "type": "tap",
+                  "params": {
+                    "x": 0.177,
+                    "y": 0.939,
+                    "after_ms": 700
+                  }
+                }
+              ]
             },
             {
               "type": "call_flow",
@@ -133,45 +138,15 @@
           ],
           "else_children": [
             {
-              "type": "if_template",
+              "type": "if_pixels",
               "params": {
-                "template": "map_tabs.png",
-                "region": "0.0,0.19,0.14,0.09",
-                "threshold": 0.82
+                "region": "0.09,0.44,0.11,0.13",
+                "color": "245,245,245",
+                "tolerance": 38,
+                "min_count": 8
               },
+              "note": "중앙 워프게이트에 자신(흰 삼각형)?",
               "children": [
-                {
-                  "type": "tap",
-                  "params": {
-                    "x": 0.177,
-                    "y": 0.939,
-                    "after_ms": 700
-                  },
-                  "note": "지도 닫기"
-                }
-              ]
-            },
-            {
-              "type": "wait",
-              "params": {
-                "seconds": 0.5
-              }
-            },
-            {
-              "type": "if_template",
-              "params": {
-                "template": "hg_warp.png",
-                "region": "0.25,0.15,0.5,0.55",
-                "threshold": 0.8
-              },
-              "note": "사냥터 워프에 갇힘? (죽어서 스폰으로 밀림)",
-              "children": [
-                {
-                  "type": "log",
-                  "params": {
-                    "message": "사냥터 워프 감지 → 재텔레포트"
-                  }
-                },
                 {
                   "type": "notify",
                   "params": {
@@ -179,6 +154,25 @@
                     "message": "스폰 갇힘 → 재텔레포트",
                     "level": "warn"
                   }
+                },
+                {
+                  "type": "if_template",
+                  "params": {
+                    "template": "map_tabs.png",
+                    "region": "0.0,0.19,0.14,0.09",
+                    "threshold": 0.82
+                  },
+                  "note": "지도 열려 있으면 닫기",
+                  "children": [
+                    {
+                      "type": "tap",
+                      "params": {
+                        "x": 0.177,
+                        "y": 0.939,
+                        "after_ms": 700
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "call_flow",
@@ -189,10 +183,68 @@
               ],
               "else_children": [
                 {
-                  "type": "log",
+                  "type": "if_template",
                   "params": {
-                    "message": "사냥 중 - 이상 없음"
+                    "template": "map_tabs.png",
+                    "region": "0.0,0.19,0.14,0.09",
+                    "threshold": 0.82
+                  },
+                  "note": "지도 열려 있으면 닫기",
+                  "children": [
+                    {
+                      "type": "tap",
+                      "params": {
+                        "x": 0.177,
+                        "y": 0.939,
+                        "after_ms": 700
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "params": {
+                    "seconds": 0.5
                   }
+                },
+                {
+                  "type": "if_frozen",
+                  "params": {
+                    "gap_s": 10,
+                    "threshold": 1.0,
+                    "samples": 2
+                  },
+                  "note": "사냥 중이면 화면차 큼(7+). 정적이면 뭔가 이상 → 재접속",
+                  "children": [
+                    {
+                      "type": "notify",
+                      "params": {
+                        "title": "자동사냥",
+                        "message": "사냥 정지 상태 → 재접속",
+                        "level": "warn"
+                      }
+                    },
+                    {
+                      "type": "call_flow",
+                      "params": {
+                        "flow": "재접속"
+                      }
+                    },
+                    {
+                      "type": "call_flow",
+                      "params": {
+                        "flow": "사냥시작"
+                      }
+                    }
+                  ],
+                  "else_children": [
+                    {
+                      "type": "log",
+                      "params": {
+                        "message": "사냥 중 - 이상 없음"
+                      }
+                    }
+                  ]
                 }
               ]
             }
