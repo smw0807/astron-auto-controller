@@ -48,6 +48,8 @@ class Settings:
     instance_flows: dict[str, str] = field(default_factory=dict)
     # 인스턴스 key -> {변수명: 값} — 플로우 시작 시 주입 (텔레포트 대상 등)
     instance_vars: dict[str, dict[str, str]] = field(default_factory=dict)
+    # 인스턴스 key -> 감시 간격(초). 없으면 watch_interval_sec 사용 (승인 플로우는 짧게)
+    instance_intervals: dict[str, float] = field(default_factory=dict)
     # 감시 루프 주기(초)
     watch_interval_sec: float = 20.0
     template_match_threshold: float = 0.85

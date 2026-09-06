@@ -96,6 +96,8 @@ class RunnerManager(QObject):
             return False
 
         interval = SETTINGS.watch_interval_sec if interval_s is None else interval_s
+        # 인스턴스별 간격 오버라이드 (예: 승인 플로우는 3초)
+        interval = SETTINGS.instance_intervals.get(key, interval)
         t = RunnerThread(st.serial, flow, repeat=-1, interval_s=interval,
                          init_vars=SETTINGS.instance_vars.get(key, {}))
         t.log.connect(lambda m, k=key: self.log.emit(k, m))

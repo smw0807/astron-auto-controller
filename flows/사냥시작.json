@@ -44,9 +44,10 @@
       "type": "tap_template",
       "params": {
         "template": "tab_list.png",
-        "threshold": 0.82,
-        "timeout": 6,
-        "after_ms": 1500
+        "threshold": 0.8,
+        "timeout": 4,
+        "after_ms": 1500,
+        "required": false
       },
       "note": "리스트 탭"
     },

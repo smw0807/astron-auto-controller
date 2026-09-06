@@ -1,54 +1,97 @@
 {
   "schema_version": 1,
   "name": "자동사냥루프",
-  "description": "500킬 종료 후 마을 감지 시 자동 복귀. 감시 루프에서 이 플로우를 반복 호출.",
+  "description": "10분 간격 실행. TAB 으로 지도를 열어 마을(무기상점 텍스트)인지 확인. 마을이면 = 500킬 종료 → 사냥시작 호출. 아니면 지도 닫고 대기.",
   "package": "",
   "steps": [
     {
       "type": "log",
       "params": {
-        "message": "자동사냥루프 tick"
+        "message": "자동사냥루프 체크"
       }
     },
     {
       "type": "if_template",
       "params": {
-        "template": "hud_town.png"
+        "template": "map_tabs.png",
+        "region": "0.0,0.19,0.14,0.09",
+        "threshold": 0.82,
+        "negate": true
       },
-      "note": "마을 화면이면 복귀 시퀀스",
+      "children": [
+        {
+          "type": "tap",
+          "params": {
+            "x": 0.177,
+            "y": 0.939,
+            "after_ms": 1300
+          }
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 0.6
+      }
+    },
+    {
+      "type": "if_template",
+      "params": {
+        "template": "map_tabs.png",
+        "region": "0.0,0.19,0.14,0.09",
+        "threshold": 0.82,
+        "negate": true
+      },
+      "note": "한 번 더 시도",
+      "children": [
+        {
+          "type": "tap",
+          "params": {
+            "x": 0.177,
+            "y": 0.939,
+            "after_ms": 1300
+          }
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "seconds": 0.5
+      }
+    },
+    {
+      "type": "if_template",
+      "params": {
+        "template": "map_village.png",
+        "region": "0.0,0.15,0.32,0.66",
+        "threshold": 0.82
+      },
+      "note": "마을 지도인가?",
       "children": [
         {
           "type": "log",
           "params": {
-            "message": "마을 감지 → 복귀 시퀀스"
+            "message": "마을 감지 → 500킬 종료, 사냥 재개"
           }
         },
         {
-          "type": "if_template",
+          "type": "notify",
           "params": {
-            "template": "gear_low_durability.png"
+            "title": "자동사냥",
+            "message": "마을 감지 → 사냥 재개",
+            "level": "info"
+          }
+        },
+        {
+          "type": "tap",
+          "params": {
+            "x": 0.177,
+            "y": 0.939,
+            "after_ms": 900
           },
-          "note": "내구도 경고 있으면 수리",
-          "children": [
-            {
-              "type": "call_flow",
-              "params": {
-                "flow": "무기상점이동"
-              }
-            },
-            {
-              "type": "call_flow",
-              "params": {
-                "flow": "아이템수리"
-              }
-            }
-          ]
-        },
-        {
-          "type": "call_flow",
-          "params": {
-            "flow": "사냥터이동"
-          }
+          "note": "지도 닫기"
         },
         {
           "type": "call_flow",
@@ -59,28 +102,27 @@
       ],
       "else_children": [
         {
+          "type": "log",
+          "params": {
+            "message": "사냥 중 - 이상 없음"
+          }
+        },
+        {
           "type": "if_template",
           "params": {
-            "template": "dialog_disconnected.png"
+            "template": "map_tabs.png",
+            "region": "0.0,0.19,0.14,0.09",
+            "threshold": 0.82
           },
           "children": [
             {
-              "type": "call_flow",
+              "type": "tap",
               "params": {
-                "flow": "재접속"
-              }
-            },
-            {
-              "type": "call_flow",
-              "params": {
-                "flow": "사냥터이동"
-              }
-            },
-            {
-              "type": "call_flow",
-              "params": {
-                "flow": "사냥시작"
-              }
+                "x": 0.177,
+                "y": 0.939,
+                "after_ms": 700
+              },
+              "note": "지도 닫기"
             }
           ]
         }
