@@ -16,25 +16,23 @@
 - [ ] Phase 3: 블록 캔버스 플로우 에디터 / 템플릿 매니저 / 인스턴스별 감시 루프(사냥종료 자동감지)
 - [ ] Phase 4: 다중 인스턴스 대시보드 / 스케줄링 / 알림
 
-## 설치
+## 실행 (가장 간단)
+
+- **`run.bat`** 더블클릭 → 최초 1회는 자동으로 가상환경 생성 + 의존성 설치, 이후엔 바로 GUI 실행
+- **`scan.bat`** 더블클릭 → 콘솔에 인스턴스 목록 출력
+
+> 사전 조건: Python 3.11 이상 설치 (`py -3.13` 권장). `run.bat` 이 알아서 찾음.
+
+## 실행 (수동)
 
 ```powershell
 py -3.13 -m venv .venv
 .venv\Scripts\python -m pip install -e .
 # OCR(킬수 인식)까지: .venv\Scripts\python -m pip install -e ".[ocr]"
-```
 
-## 실행
-
-```powershell
-# GUI
-.venv\Scripts\python -m aac
-
-# CLI: 인스턴스 조회
-.venv\Scripts\python -m aac.tools.scan
-
-# CLI: 스크린샷 저장 / 좌표 탭 테스트
-.venv\Scripts\python -m aac.tools.shoot 물돌
+.venv\Scripts\python -m aac                       # GUI
+.venv\Scripts\python -m aac.tools.scan            # 인스턴스 조회
+.venv\Scripts\python -m aac.tools.shoot 물돌       # 스크린샷 저장
 .venv\Scripts\python -m aac.tools.shoot 물돌 --tap 0.5 0.9
 ```
 
