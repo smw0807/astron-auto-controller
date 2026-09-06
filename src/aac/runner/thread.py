@@ -7,8 +7,9 @@ from aac.adb import AdbClient, Device
 from aac.flow import Flow, FlowEngine, StopToken
 
 
-class FlowRunThread(QThread):
+class RunnerThread(QThread):
     log = Signal(str)
+    iteration = Signal(int)       # 반복 시작 시 회차(1-base)
     finished_ok = Signal(bool)
 
     def __init__(self, serial: str, flow: Flow, repeat: int = 1,
@@ -16,12 +17,16 @@ class FlowRunThread(QThread):
         super().__init__(parent)
         self._serial = serial
         self._flow = flow
-        self._repeat = max(1, repeat)
+        self._repeat = repeat          # < 0 이면 무한
         self._interval = interval_s
         self._stop = StopToken()
 
     def stop(self) -> None:
         self._stop.stop()
+
+    @property
+    def stopping(self) -> bool:
+        return self._stop.stopped
 
     def run(self) -> None:
         dev = Device(serial=self._serial, client=AdbClient())
@@ -30,8 +35,10 @@ class FlowRunThread(QThread):
         n = 0
         while not self._stop.stopped and (self._repeat < 0 or n < self._repeat):
             n += 1
+            self.iteration.emit(n)
             if self._repeat != 1:
-                self.log.emit(f"─── 반복 {n}{'' if self._repeat < 0 else f'/{self._repeat}'} ───")
+                tag = "무한" if self._repeat < 0 else f"{n}/{self._repeat}"
+                self.log.emit(f"─── 반복 {tag} ───")
             ok = FlowEngine(dev, self.log.emit, self._stop).run(self._flow)
             if self._stop.stopped:
                 break

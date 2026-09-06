@@ -6,21 +6,18 @@
   "steps": [
     {
       "type": "log",
-      "id": "d279e412",
       "params": {
         "message": "사냥 시작"
       }
     },
     {
       "type": "wait",
-      "id": "a867b6d9",
       "params": {
         "seconds": 1.5
       }
     },
     {
       "type": "tap_template",
-      "id": "79010fc0",
       "params": {
         "template": "btn_auto_hunt.png",
         "timeout": 10,
@@ -31,7 +28,6 @@
     },
     {
       "type": "if_template",
-      "id": "ff8e07bf",
       "params": {
         "template": "auto_hunt_active.png",
         "negate": true
@@ -40,7 +36,6 @@
       "children": [
         {
           "type": "tap_template",
-          "id": "bb31f98c",
           "params": {
             "template": "btn_auto_hunt.png",
             "timeout": 5,
@@ -52,7 +47,6 @@
     },
     {
       "type": "log",
-      "id": "ff33391c",
       "params": {
         "message": "사냥 진행 중"
       }

@@ -10,9 +10,11 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFormLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPlainTextEdit,
     QSpinBox,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -29,25 +31,43 @@ class ParamForm(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._layout = QFormLayout(self)
-        self._layout.setContentsMargins(6, 6, 6, 6)
-        self._step: Step | None = None
-        self._widgets: dict[str, QWidget] = {}
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(6, 6, 6, 6)
+
+        form_host = QWidget()
+        self._layout = QFormLayout(form_host)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(form_host)
+
+        self._note_label = QLabel("메모")
         self._note = QPlainTextEdit()
         self._note.setPlaceholderText("메모")
         self._note.setFixedHeight(48)
+        self._note.textChanged.connect(self._commit_note)
+        outer.addWidget(self._note_label)
+        outer.addWidget(self._note)
+        outer.addStretch(1)
+
+        self._step: Step | None = None
+        self._widgets: dict[str, QWidget] = {}
 
     # --- 로드 ----------------------------------------------------
     def set_step(self, step: Step | None, flow_names: list[str] | None = None) -> None:
-        self._step = step
+        self._step = None  # commit 억제
         while self._layout.rowCount():
             self._layout.removeRow(0)
         self._widgets.clear()
-        if step is None:
+
+        show = step is not None and get_step_spec(step.type) is not None
+        self._note_label.setVisible(show)
+        self._note.setVisible(show)
+        if not show:
+            self._note.blockSignals(True)
+            self._note.setPlainText("")
+            self._note.blockSignals(False)
             return
+
         spec = get_step_spec(step.type)
-        if spec is None:
-            return
         for ps in spec.params:
             val = step.params.get(ps.name, ps.default)
             w = self._make_widget(ps, val, flow_names or [])
@@ -57,8 +77,7 @@ class ParamForm(QWidget):
         self._note.blockSignals(True)
         self._note.setPlainText(step.note)
         self._note.blockSignals(False)
-        self._note.textChanged.connect(self._commit_note)
-        self._layout.addRow("메모", self._note)
+        self._step = step
 
     # --- 위젯 생성 ---------------------------------------------
     def _make_widget(self, ps: ParamSpec, val: Any, flow_names: list[str]) -> QWidget:

@@ -6,14 +6,12 @@
   "steps": [
     {
       "type": "log",
-      "id": "7edb190e",
       "params": {
         "message": "재접속 시작"
       }
     },
     {
       "type": "stop_app",
-      "id": "cdd260ab",
       "params": {
         "package": ""
       },
@@ -21,14 +19,12 @@
     },
     {
       "type": "wait",
-      "id": "bc9aebc4",
       "params": {
         "seconds": 2.0
       }
     },
     {
       "type": "launch_app",
-      "id": "9520e43c",
       "params": {
         "package": "",
         "wait_s": 12.0
@@ -37,7 +33,6 @@
     },
     {
       "type": "tap_template",
-      "id": "de9e62e8",
       "params": {
         "template": "btn_start_screen.png",
         "timeout": 40,
@@ -47,7 +42,6 @@
     },
     {
       "type": "tap_template",
-      "id": "aa1b5f10",
       "params": {
         "template": "btn_char_select.png",
         "timeout": 20,
@@ -57,7 +51,6 @@
     },
     {
       "type": "wait_template",
-      "id": "82265c3e",
       "params": {
         "template": "hud_ingame.png",
         "timeout": 30,
@@ -66,7 +59,6 @@
     },
     {
       "type": "log",
-      "id": "5791799d",
       "params": {
         "message": "재접속 완료"
       }

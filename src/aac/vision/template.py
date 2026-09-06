@@ -21,6 +21,33 @@ class MatchResult:
     box: tuple[int, int, int, int] = (0, 0, 0, 0)
 
 
+def list_templates() -> list[str]:
+    return sorted(p.name for p in TEMPLATES_DIR.glob("*.png"))
+
+
+def save_crop(
+    frame_bgr: np.ndarray,
+    region_norm: tuple[float, float, float, float],
+    name: str,
+) -> Path:
+    """정규화 영역(x, y, w, h)을 잘라 templates/<name>.png 로 저장."""
+    h, w = frame_bgr.shape[:2]
+    rx, ry, rw, rh = region_norm
+    x1 = max(0, int(rx * w))
+    y1 = max(0, int(ry * h))
+    x2 = min(w, int((rx + rw) * w))
+    y2 = min(h, int((ry + rh) * h))
+    if x2 - x1 < 4 or y2 - y1 < 4:
+        raise ValueError("영역이 너무 작습니다")
+    crop = frame_bgr[y1:y2, x1:x2]
+    safe = "".join(c for c in name if c.isalnum() or c in " _-()").strip() or "template"
+    if not safe.endswith(".png"):
+        safe += ".png"
+    out = TEMPLATES_DIR / safe
+    cv2.imwrite(str(out), crop)
+    return out
+
+
 def load_template(name_or_path: str) -> np.ndarray:
     p = Path(name_or_path)
     if not p.is_absolute() and not p.exists():

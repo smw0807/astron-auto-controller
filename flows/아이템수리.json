@@ -6,14 +6,12 @@
   "steps": [
     {
       "type": "log",
-      "id": "285ba8c7",
       "params": {
         "message": "아이템 수리"
       }
     },
     {
       "type": "tap_template",
-      "id": "84d0bb11",
       "params": {
         "template": "npc_weapon_shop.png",
         "timeout": 8,
@@ -23,7 +21,6 @@
     },
     {
       "type": "tap_template",
-      "id": "7986cf21",
       "params": {
         "template": "btn_repair.png",
         "timeout": 8.0,
@@ -33,7 +30,6 @@
     },
     {
       "type": "tap_template",
-      "id": "587b0a8e",
       "params": {
         "template": "btn_repair_all.png",
         "timeout": 5,
@@ -43,7 +39,6 @@
     },
     {
       "type": "tap_template",
-      "id": "c7305a7c",
       "params": {
         "template": "btn_confirm.png",
         "timeout": 5,
@@ -53,7 +48,6 @@
     },
     {
       "type": "key",
-      "id": "c8503817",
       "params": {
         "keycode": "BACK"
       }

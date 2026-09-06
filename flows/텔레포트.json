@@ -6,14 +6,12 @@
   "steps": [
     {
       "type": "log",
-      "id": "543692e1",
       "params": {
         "message": "텔레포트"
       }
     },
     {
       "type": "key",
-      "id": "b7311357",
       "params": {
         "keycode": "MENU"
       },
@@ -21,7 +19,6 @@
     },
     {
       "type": "tap_template",
-      "id": "49743ba2",
       "params": {
         "template": "item_teleport.png",
         "timeout": 8.0,
@@ -31,7 +28,6 @@
     },
     {
       "type": "tap_template",
-      "id": "e1ff8678",
       "params": {
         "template": "btn_use.png",
         "timeout": 5,
@@ -41,7 +37,6 @@
     },
     {
       "type": "tap_template",
-      "id": "6d150423",
       "params": {
         "template": "teleport_dest.png",
         "timeout": 8,
@@ -51,7 +46,6 @@
     },
     {
       "type": "wait_template",
-      "id": "6b68c764",
       "params": {
         "template": "hud_ingame.png",
         "timeout": 20,

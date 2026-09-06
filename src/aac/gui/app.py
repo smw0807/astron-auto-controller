@@ -3,14 +3,18 @@ from __future__ import annotations
 
 import sys
 
+import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPlainTextEdit,
     QPushButton,
     QSpinBox,
@@ -23,13 +27,17 @@ from PySide6.QtWidgets import (
 from aac.adb import AdbClient, Device
 from aac.bluestacks import BlueStacksInstance
 from aac.gui.capture_view import CaptureView
+from aac.gui.dashboard import Dashboard
 from aac.gui.flow_editor import FlowEditor
 from aac.gui.instances_panel import InstancesPanel
+from aac.gui.template_panel import TemplatePanel
 from aac.gui.workers import ScreenshotThread
+from aac.runner import RunnerManager
+from aac.vision.template import save_crop
 
 
 class CapturePage(QWidget):
-    """인스턴스 목록 + 라이브 스크린샷 + 좌표 도구."""
+    """인스턴스 목록 + 라이브 스크린샷 + 좌표/템플릿 도구."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -37,6 +45,8 @@ class CapturePage(QWidget):
         self._shot: ScreenshotThread | None = None
         self._device: Device | None = None
         self._last_norm: tuple[float, float] | None = None
+        self._last_region: tuple[float, float, float, float] | None = None
+        self._last_frame: np.ndarray | None = None
 
         self.instances = InstancesPanel()
         self.instances.instance_selected.connect(self._on_instance_selected)
@@ -71,24 +81,39 @@ class CapturePage(QWidget):
         ctl.addWidget(self.coord_lbl)
         ctl.addWidget(self.tap_btn)
 
+        # 템플릿 저장 행
+        self.tpl_name = QLineEdit()
+        self.tpl_name.setPlaceholderText("템플릿 이름 (예: btn_auto_hunt)")
+        self.save_tpl_btn = QPushButton("드래그한 영역 → 템플릿 저장")
+        self.save_tpl_btn.setEnabled(False)
+        self.save_tpl_btn.clicked.connect(self._save_template)
+        tpl_row = QHBoxLayout()
+        tpl_row.addWidget(self.tpl_name, 1)
+        tpl_row.addWidget(self.save_tpl_btn)
+
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(500)
-        self.log.setFixedHeight(120)
+        self.log.setFixedHeight(110)
 
-        right = QWidget()
-        rlay = QVBoxLayout(right)
-        rlay.setContentsMargins(4, 4, 4, 4)
-        rlay.addWidget(self.view, 1)
-        rlay.addLayout(ctl)
-        rlay.addWidget(QLabel("로그"))
-        rlay.addWidget(self.log)
+        center = QWidget()
+        clay = QVBoxLayout(center)
+        clay.setContentsMargins(4, 4, 4, 4)
+        clay.addWidget(self.view, 1)
+        clay.addLayout(ctl)
+        clay.addLayout(tpl_row)
+        clay.addWidget(QLabel("로그"))
+        clay.addWidget(self.log)
+
+        self.templates = TemplatePanel()
+        self.templates.match_tested.connect(self._on_match_tested)
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.instances)
-        splitter.addWidget(right)
+        splitter.addWidget(center)
+        splitter.addWidget(self.templates)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([380, 800])
+        splitter.setSizes([330, 720, 230])
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
@@ -112,12 +137,17 @@ class CapturePage(QWidget):
         self._grab_once()
 
     # --- 캡처 ---
+    def _set_frame(self, img: np.ndarray) -> None:
+        self._last_frame = img
+        self.view.set_frame(img)
+        self.templates.set_frame(img)
+
     def _grab_once(self) -> None:
         if self._device is None:
             return
         img = self._device.screenshot()
         if img is not None:
-            self.view.set_frame(img)
+            self._set_frame(img)
         else:
             self._log("스크린샷 실패")
 
@@ -130,7 +160,7 @@ class CapturePage(QWidget):
             return
         self._stop_live()
         self._shot = ScreenshotThread(self._current.serial, self.interval_spin.value())
-        self._shot.frame.connect(self.view.set_frame)
+        self._shot.frame.connect(self._set_frame)
         self._shot.error.connect(self._log)
         self._shot.start()
 
@@ -162,8 +192,31 @@ class CapturePage(QWidget):
         self._log(f"탭 {self._last_norm} -> px {self._device.to_px(*self._last_norm)}")
 
     def _on_region_selected(self, x: float, y: float, w: float, h: float) -> None:
+        self._last_region = (x, y, w, h)
         self.coord_lbl.setText(f"영역: {x:.4f},{y:.4f} {w:.4f}x{h:.4f}")
-        self._log(f"영역: region 파라미터에 붙여넣기 → {x:.4f},{y:.4f},{w:.4f},{h:.4f}")
+        self.save_tpl_btn.setEnabled(self._last_frame is not None)
+        self._log(f"영역 선택 → ocr_region 파라미터: {x:.4f},{y:.4f},{w:.4f},{h:.4f}")
+
+    def _save_template(self) -> None:
+        if self._last_frame is None or self._last_region is None:
+            return
+        name = self.tpl_name.text().strip()
+        if not name:
+            name, ok = QInputDialog.getText(self, "템플릿 이름", "파일명:")
+            if not ok or not name.strip():
+                return
+            name = name.strip()
+        try:
+            out = save_crop(self._last_frame, self._last_region, name)
+        except ValueError as exc:
+            QMessageBox.warning(self, "저장 실패", str(exc))
+            return
+        self.templates.refresh()
+        self._log(f"템플릿 저장: {out.name}")
+
+    def _on_match_tested(self, found: bool, cx: float, cy: float, score: float) -> None:
+        self.view.show_marker(cx, cy, f"{score:.2f}", found)
+        self._log(f"매칭 테스트: {'발견' if found else '미발견'} score={score:.3f} @({cx:.3f},{cy:.3f})")
 
     def shutdown(self) -> None:
         self._stop_live()
@@ -173,25 +226,34 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Astron Auto Controller")
-        self.resize(1240, 760)
+        self.resize(1320, 800)
+
+        self.runner = RunnerManager(self)
 
         self.capture_page = CapturePage()
         self.flow_page = FlowEditor()
+        self.dashboard = Dashboard(self.runner)
 
-        # 스캔 결과를 플로우 탭의 대상 인스턴스 목록에 반영
-        self.capture_page.instances.scan_finished.connect(self.flow_page.set_instances)
+        self.capture_page.instances.scan_finished.connect(self._on_scan_finished)
 
         tabs = QTabWidget()
         tabs.addTab(self.capture_page, "인스턴스 / 캡처")
         tabs.addTab(self.flow_page, "플로우")
+        tabs.addTab(self.dashboard, "대시보드")
         self.setCentralWidget(tabs)
 
         self.statusBar().showMessage("준비됨")
         self.capture_page.instances.scan()
 
+    def _on_scan_finished(self, instances: list) -> None:
+        self.flow_page.set_instances(instances)
+        self.dashboard.set_instances(instances)
+        self.statusBar().showMessage(f"인스턴스 {len(instances)}개")
+
     def closeEvent(self, event) -> None:
         self.capture_page.shutdown()
         self.flow_page.shutdown()
+        self.dashboard.shutdown()
         super().closeEvent(event)
 
 

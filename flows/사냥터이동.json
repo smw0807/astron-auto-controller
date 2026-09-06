@@ -6,14 +6,12 @@
   "steps": [
     {
       "type": "log",
-      "id": "7ea81fb6",
       "params": {
         "message": "사냥터 이동 시작"
       }
     },
     {
       "type": "tap_template",
-      "id": "a63bd95e",
       "params": {
         "template": "btn_menu.png",
         "timeout": 8.0,
@@ -23,7 +21,6 @@
     },
     {
       "type": "tap_template",
-      "id": "b6f59e19",
       "params": {
         "template": "btn_move_list.png",
         "timeout": 8.0,
@@ -33,7 +30,6 @@
     },
     {
       "type": "tap_template",
-      "id": "8aa01d48",
       "params": {
         "template": "dest_hunting_ground.png",
         "timeout": 8.0,
@@ -44,7 +40,6 @@
     },
     {
       "type": "tap_template",
-      "id": "59deb24c",
       "params": {
         "template": "btn_move_confirm.png",
         "timeout": 6,
@@ -54,7 +49,6 @@
     },
     {
       "type": "wait_template",
-      "id": "e38656e6",
       "params": {
         "template": "hud_field.png",
         "timeout": 25,
@@ -63,7 +57,6 @@
     },
     {
       "type": "log",
-      "id": "0a456a36",
       "params": {
         "message": "사냥터 도착"
       }

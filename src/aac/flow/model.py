@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import json
-import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -18,15 +17,10 @@ from aac.config import FLOWS_DIR
 SCHEMA_VERSION = 1
 
 
-def _new_id() -> str:
-    return uuid.uuid4().hex[:8]
-
-
 @dataclass
 class Step:
     type: str
     params: dict[str, Any] = field(default_factory=dict)
-    id: str = field(default_factory=_new_id)
     enabled: bool = True
     note: str = ""
     children: list[Step] = field(default_factory=list)
@@ -34,7 +28,7 @@ class Step:
 
     # --- 직렬화 ---------------------------------------------------
     def to_dict(self) -> dict[str, Any]:
-        d: dict[str, Any] = {"type": self.type, "id": self.id, "params": self.params}
+        d: dict[str, Any] = {"type": self.type, "params": self.params}
         if not self.enabled:
             d["enabled"] = False
         if self.note:
@@ -50,7 +44,6 @@ class Step:
         return cls(
             type=d["type"],
             params=dict(d.get("params", {})),
-            id=d.get("id") or _new_id(),
             enabled=d.get("enabled", True),
             note=d.get("note", ""),
             children=[cls.from_dict(c) for c in d.get("children", [])],

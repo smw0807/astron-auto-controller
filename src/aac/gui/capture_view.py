@@ -32,6 +32,15 @@ class CaptureView(QLabel):
         self._drag_start: QPoint | None = None
         self._drag_rect: QRect | None = None
         self._last_click_norm: tuple[float, float] | None = None
+        self._marker: tuple[float, float, str, bool] | None = None  # cx, cy, label, ok
+
+    def show_marker(self, cx: float, cy: float, label: str = "", ok: bool = True) -> None:
+        self._marker = (cx, cy, label, ok)
+        self._render()
+
+    def clear_marker(self) -> None:
+        self._marker = None
+        self._render()
 
     # --- 프레임 갱신 --------------------------------------------------
     def set_frame(self, img: np.ndarray) -> None:
@@ -63,6 +72,15 @@ class CaptureView(QLabel):
             p.setPen(QPen(Qt.red, 2))
             p.drawLine(cx - 8, cy, cx + 8, cy)
             p.drawLine(cx, cy - 8, cx, cy + 8)
+        if self._marker is not None:
+            mx, my, label, ok = self._marker
+            x = mx * scaled.width()
+            y = my * scaled.height()
+            col = Qt.green if ok else Qt.magenta
+            p.setPen(QPen(col, 2))
+            p.drawEllipse(int(x - 12), int(y - 12), 24, 24)
+            if label:
+                p.drawText(int(x + 14), int(y), label)
         p.end()
         self.setPixmap(canvas)
 

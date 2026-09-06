@@ -12,6 +12,7 @@ dist/
 /captures/
 /logs/
 *.log
+/settings.json
 
 # user content kept, but ignore scratch
 /templates/_scratch/

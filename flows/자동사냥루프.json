@@ -6,14 +6,12 @@
   "steps": [
     {
       "type": "log",
-      "id": "bd3da0c2",
       "params": {
         "message": "자동사냥루프 tick"
       }
     },
     {
       "type": "if_template",
-      "id": "c64b5631",
       "params": {
         "template": "hud_town.png"
       },
@@ -21,14 +19,12 @@
       "children": [
         {
           "type": "log",
-          "id": "cb5ba79d",
           "params": {
             "message": "마을 감지 → 복귀 시퀀스"
           }
         },
         {
           "type": "if_template",
-          "id": "3d4d4f5e",
           "params": {
             "template": "gear_low_durability.png"
           },
@@ -36,14 +32,12 @@
           "children": [
             {
               "type": "call_flow",
-              "id": "a43ae385",
               "params": {
                 "flow": "무기상점이동"
               }
             },
             {
               "type": "call_flow",
-              "id": "d46e43ee",
               "params": {
                 "flow": "아이템수리"
               }
@@ -52,14 +46,12 @@
         },
         {
           "type": "call_flow",
-          "id": "67d452d4",
           "params": {
             "flow": "사냥터이동"
           }
         },
         {
           "type": "call_flow",
-          "id": "65d2b5f0",
           "params": {
             "flow": "사냥시작"
           }
@@ -68,28 +60,24 @@
       "else_children": [
         {
           "type": "if_template",
-          "id": "d079020b",
           "params": {
             "template": "dialog_disconnected.png"
           },
           "children": [
             {
               "type": "call_flow",
-              "id": "7624025b",
               "params": {
                 "flow": "재접속"
               }
             },
             {
               "type": "call_flow",
-              "id": "c38369a2",
               "params": {
                 "flow": "사냥터이동"
               }
             },
             {
               "type": "call_flow",
-              "id": "4f0be0c4",
               "params": {
                 "flow": "사냥시작"
               }

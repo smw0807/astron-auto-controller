@@ -22,8 +22,8 @@ from PySide6.QtWidgets import (
 from aac.flow import Flow, Step
 from aac.flow.events import scaffold_all
 from aac.flow.registry import get_step_spec, step_spec_list
-from aac.gui.flow_runner import FlowRunThread
 from aac.gui.param_form import ParamForm
+from aac.runner import RunnerThread
 
 ROLE_STEP = Qt.UserRole
 ROLE_ELSE = Qt.UserRole + 1
@@ -35,7 +35,7 @@ class FlowEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._flow: Flow | None = None
-        self._run: FlowRunThread | None = None
+        self._run: RunnerThread | None = None
         self._instances: list = []  # BlueStacksInstance
 
         # --- 상단: 플로우 선택 ---
@@ -325,8 +325,6 @@ class FlowEditor(QWidget):
 
         step: Step = it.data(0, ROLE_STEP)
         clone = Step.from_dict(step.to_dict())
-        for s in clone.walk():
-            s.id = Step().id
         parent = it.parent() or self.tree.invisibleRootItem()
         idx = parent.indexOfChild(it) + 1
         new_it = self._add_item(parent, clone)
@@ -420,7 +418,7 @@ class FlowEditor(QWidget):
             return
         self._save()
         self.log.clear()
-        self._run = FlowRunThread(
+        self._run = RunnerThread(
             serial, self._flow, self.repeat_spin.value(), float(self.interval_spin.value())
         )
         self._run.log.connect(self._log)
