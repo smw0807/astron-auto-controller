@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "자동사냥루프",
-  "description": "5분 간격. ① 화면 멈춤 → 재접속+사냥시작. ② 마을 → 사냥시작. ③ 사냥터 워프 갇힘 → 편대텔레포트. ④ 정상 사냥 → 대기.",
+  "description": "5분 간격. 인게임 화면(전체/편대/클랜 채팅바) 확인 후: ① 화면 멈춤 → 재접속. ② 마을 → 사냥시작. ③ 스폰 갇힘 → 편대텔레포트. ④ 정상 → 대기. 인게임 화면이 아니면(로딩/로그인/에러) 멈춤 여부만 보고 필요 시 재접속.",
   "package": "",
   "steps": [
     {
@@ -11,123 +11,36 @@
       }
     },
     {
-      "type": "if_frozen",
+      "type": "if_template",
       "params": {
-        "gap_s": 14,
-        "threshold": 0.3,
-        "samples": 3
+        "template": "scr_ingame.png",
+        "region": "0.35,0.78,0.30,0.10",
+        "threshold": 0.82
       },
-      "note": "화면 멈춤 = 튕김/프리징",
+      "note": "인게임 HUD(전체/편대/클랜)가 보이나?",
       "children": [
         {
-          "type": "notify",
+          "type": "if_frozen",
           "params": {
-            "title": "자동사냥",
-            "message": "화면 멈춤 → 재접속",
-            "level": "warn"
-          }
-        },
-        {
-          "type": "call_flow",
-          "params": {
-            "flow": "재접속"
-          }
-        },
-        {
-          "type": "call_flow",
-          "params": {
-            "flow": "사냥시작"
-          }
-        }
-      ],
-      "else_children": [
-        {
-          "type": "if_template",
-          "params": {
-            "template": "map_tabs.png",
-            "region": "0.0,0.19,0.14,0.09",
-            "threshold": 0.82,
-            "negate": true
+            "gap_s": 14,
+            "threshold": 0.3,
+            "samples": 3
           },
-          "note": "지도 닫혀 있으면 열기",
-          "children": [
-            {
-              "type": "tap",
-              "params": {
-                "x": 0.177,
-                "y": 0.939,
-                "after_ms": 1300
-              }
-            }
-          ]
-        },
-        {
-          "type": "wait",
-          "params": {
-            "seconds": 0.6
-          }
-        },
-        {
-          "type": "if_template",
-          "params": {
-            "template": "map_tabs.png",
-            "region": "0.0,0.19,0.14,0.09",
-            "threshold": 0.82,
-            "negate": true
-          },
-          "note": "한 번 더 시도",
-          "children": [
-            {
-              "type": "tap",
-              "params": {
-                "x": 0.177,
-                "y": 0.939,
-                "after_ms": 1300
-              }
-            }
-          ]
-        },
-        {
-          "type": "wait",
-          "params": {
-            "seconds": 0.6
-          }
-        },
-        {
-          "type": "if_template",
-          "params": {
-            "template": "map_village.png",
-            "region": "0.0,0.15,0.32,0.66",
-            "threshold": 0.82
-          },
-          "note": "마을 지도?",
+          "note": "화면 멈춤 = 튕김/프리징",
           "children": [
             {
               "type": "notify",
               "params": {
                 "title": "자동사냥",
-                "message": "마을 감지 → 사냥 재개",
-                "level": "info"
+                "message": "화면 멈춤 → 재접속",
+                "level": "warn"
               }
             },
             {
-              "type": "if_template",
+              "type": "call_flow",
               "params": {
-                "template": "map_tabs.png",
-                "region": "0.0,0.19,0.14,0.09",
-                "threshold": 0.82
-              },
-              "note": "지도 열려 있으면 닫기",
-              "children": [
-                {
-                  "type": "tap",
-                  "params": {
-                    "x": 0.177,
-                    "y": 0.939,
-                    "after_ms": 700
-                  }
-                }
-              ]
+                "flow": "재접속"
+              }
             },
             {
               "type": "call_flow",
@@ -138,21 +51,72 @@
           ],
           "else_children": [
             {
-              "type": "if_pixels",
+              "type": "if_template",
               "params": {
-                "region": "0.09,0.44,0.11,0.13",
-                "color": "245,245,245",
-                "tolerance": 38,
-                "min_count": 8
+                "template": "map_tabs.png",
+                "region": "0.0,0.19,0.14,0.09",
+                "threshold": 0.82,
+                "negate": true
               },
-              "note": "중앙 워프게이트에 자신(흰 삼각형)?",
+              "note": "지도 닫혀 있으면 열기",
+              "children": [
+                {
+                  "type": "tap",
+                  "params": {
+                    "x": 0.177,
+                    "y": 0.939,
+                    "after_ms": 1300
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "params": {
+                "seconds": 0.6
+              }
+            },
+            {
+              "type": "if_template",
+              "params": {
+                "template": "map_tabs.png",
+                "region": "0.0,0.19,0.14,0.09",
+                "threshold": 0.82,
+                "negate": true
+              },
+              "note": "한 번 더 시도",
+              "children": [
+                {
+                  "type": "tap",
+                  "params": {
+                    "x": 0.177,
+                    "y": 0.939,
+                    "after_ms": 1300
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "params": {
+                "seconds": 0.6
+              }
+            },
+            {
+              "type": "if_template",
+              "params": {
+                "template": "map_village.png",
+                "region": "0.0,0.15,0.32,0.66",
+                "threshold": 0.82
+              },
+              "note": "마을 지도?",
               "children": [
                 {
                   "type": "notify",
                   "params": {
                     "title": "자동사냥",
-                    "message": "스폰 갇힘 → 재텔레포트",
-                    "level": "warn"
+                    "message": "마을 감지 → 사냥 재개",
+                    "level": "info"
                   }
                 },
                 {
@@ -177,76 +141,170 @@
                 {
                   "type": "call_flow",
                   "params": {
-                    "flow": "편대텔레포트"
+                    "flow": "사냥시작"
                   }
                 }
               ],
               "else_children": [
                 {
-                  "type": "if_template",
+                  "type": "if_pixels",
                   "params": {
-                    "template": "map_tabs.png",
-                    "region": "0.0,0.19,0.14,0.09",
-                    "threshold": 0.82
+                    "region": "0.09,0.44,0.11,0.13",
+                    "color": "245,245,245",
+                    "tolerance": 38,
+                    "min_count": 8
                   },
-                  "note": "지도 열려 있으면 닫기",
-                  "children": [
-                    {
-                      "type": "tap",
-                      "params": {
-                        "x": 0.177,
-                        "y": 0.939,
-                        "after_ms": 700
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "wait",
-                  "params": {
-                    "seconds": 0.5
-                  }
-                },
-                {
-                  "type": "if_frozen",
-                  "params": {
-                    "gap_s": 10,
-                    "threshold": 1.0,
-                    "samples": 2
-                  },
-                  "note": "사냥 중이면 화면차 큼(7+). 정적이면 뭔가 이상 → 재접속",
+                  "note": "중앙 워프게이트에 자신(흰 삼각형)?",
                   "children": [
                     {
                       "type": "notify",
                       "params": {
                         "title": "자동사냥",
-                        "message": "사냥 정지 상태 → 재접속",
+                        "message": "스폰 갇힘 → 재텔레포트",
                         "level": "warn"
                       }
                     },
                     {
-                      "type": "call_flow",
+                      "type": "if_template",
                       "params": {
-                        "flow": "재접속"
-                      }
+                        "template": "map_tabs.png",
+                        "region": "0.0,0.19,0.14,0.09",
+                        "threshold": 0.82
+                      },
+                      "note": "지도 열려 있으면 닫기",
+                      "children": [
+                        {
+                          "type": "tap",
+                          "params": {
+                            "x": 0.177,
+                            "y": 0.939,
+                            "after_ms": 700
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "call_flow",
                       "params": {
-                        "flow": "사냥시작"
+                        "flow": "편대텔레포트"
                       }
                     }
                   ],
                   "else_children": [
                     {
-                      "type": "log",
+                      "type": "if_template",
                       "params": {
-                        "message": "사냥 중 - 이상 없음"
+                        "template": "map_tabs.png",
+                        "region": "0.0,0.19,0.14,0.09",
+                        "threshold": 0.82
+                      },
+                      "note": "지도 열려 있으면 닫기",
+                      "children": [
+                        {
+                          "type": "tap",
+                          "params": {
+                            "x": 0.177,
+                            "y": 0.939,
+                            "after_ms": 700
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "wait",
+                      "params": {
+                        "seconds": 0.5
                       }
+                    },
+                    {
+                      "type": "if_frozen",
+                      "params": {
+                        "gap_s": 10,
+                        "threshold": 1.0,
+                        "samples": 2
+                      },
+                      "note": "사냥 중이면 화면차 큼(7+). 정적이면 뭔가 이상 → 재접속",
+                      "children": [
+                        {
+                          "type": "notify",
+                          "params": {
+                            "title": "자동사냥",
+                            "message": "사냥 정지 상태 → 재접속",
+                            "level": "warn"
+                          }
+                        },
+                        {
+                          "type": "call_flow",
+                          "params": {
+                            "flow": "재접속"
+                          }
+                        },
+                        {
+                          "type": "call_flow",
+                          "params": {
+                            "flow": "사냥시작"
+                          }
+                        }
+                      ],
+                      "else_children": [
+                        {
+                          "type": "log",
+                          "params": {
+                            "message": "사냥 중 - 이상 없음"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
               ]
+            }
+          ]
+        }
+      ],
+      "else_children": [
+        {
+          "type": "log",
+          "params": {
+            "message": "인게임 화면 아님 (로딩/로그인/에러?)"
+          }
+        },
+        {
+          "type": "if_frozen",
+          "params": {
+            "gap_s": 12,
+            "threshold": 0.3,
+            "samples": 3
+          },
+          "note": "인게임도 아니고 멈춰 있으면 확실히 이상 → 재접속",
+          "children": [
+            {
+              "type": "notify",
+              "params": {
+                "title": "자동사냥",
+                "message": "인게임 아님 + 멈춤 → 재접속",
+                "level": "warn"
+              }
+            },
+            {
+              "type": "call_flow",
+              "params": {
+                "flow": "재접속"
+              }
+            },
+            {
+              "type": "call_flow",
+              "params": {
+                "flow": "사냥시작"
+              }
+            }
+          ],
+          "else_children": [
+            {
+              "type": "log",
+              "params": {
+                "message": "화면 전환 중으로 추정 → 다음 tick 대기"
+              }
             }
           ]
         }

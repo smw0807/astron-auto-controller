@@ -9,16 +9,14 @@ import argparse
 import time
 
 from aac.adb import AdbClient, Device
-from aac.bluestacks import scan_instances
+from aac.bluestacks import match_instance, scan_instances
 from aac.config import CAPTURES_DIR
 from aac.tools._console import setup as _console_setup
 
 
 def _resolve(name: str):
-    for i in scan_instances():
-        if name in (i.key, i.display_name) and i.online and i.serial:
-            return i
-    return None
+    inst = match_instance(name, scan_instances())
+    return inst if (inst and inst.online and inst.serial) else None
 
 
 def main() -> int:

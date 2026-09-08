@@ -113,20 +113,27 @@ class Device:
         return None
 
     # --- 화면 캡처 -------------------------------------------------
-    def screencap_png(self) -> bytes:
-        data = self.client.run(["exec-out", "screencap", "-p"], serial=self.serial, binary=True)
+    def screencap_png(self, timeout: float = 20.0) -> bytes:
+        data = self.client.run(
+            ["exec-out", "screencap", "-p"], serial=self.serial, binary=True, timeout=timeout
+        )
         return data if isinstance(data, bytes) else b""
 
-    def screenshot(self) -> np.ndarray | None:
-        """BGR ndarray 반환. 실패 시 None."""
+    def screenshot(self, retries: int = 2) -> np.ndarray | None:
+        """BGR ndarray 반환. 실패 시 재연결 후 재시도, 그래도 실패하면 None."""
         import cv2
 
-        raw = self.screencap_png()
-        if not raw:
-            return None
-        arr = np.frombuffer(raw, dtype=np.uint8)
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        return img
+        for attempt in range(retries + 1):
+            raw = self.screencap_png()
+            if raw:
+                arr = np.frombuffer(raw, dtype=np.uint8)
+                img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+                if img is not None and img.size > 0:
+                    return img
+            if attempt < retries:
+                time.sleep(0.6)
+                self.client.connect(self.serial)  # 끊겼으면 재연결
+        return None
 
     # --- 편의 -----------------------------------------------------
     def wait(self, seconds: float) -> None:

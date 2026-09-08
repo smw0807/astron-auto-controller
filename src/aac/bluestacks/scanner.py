@@ -71,6 +71,24 @@ def _to_int(v: str) -> int | None:
         return None
 
 
+def match_instance(
+    name: str, instances: list[BlueStacksInstance]
+) -> BlueStacksInstance | None:
+    """이름으로 인스턴스 찾기: key 정확일치 → display_name 정확일치 → display_name 부분일치."""
+    name = name.strip()
+    for i in instances:
+        if i.key == name:
+            return i
+    for i in instances:
+        if i.display_name == name:
+            return i
+    lowered = name.lower()
+    for i in instances:
+        if lowered and lowered in i.display_name.lower():
+            return i
+    return None
+
+
 # --- 프로세스 조회 -----------------------------------------------------
 def _running_instances() -> dict[str, int]:
     """{instance_key: pid} — 실행 중인 HD-Player 프로세스."""

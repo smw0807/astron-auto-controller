@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 
 from aac.adb import AdbClient, Device
-from aac.bluestacks import scan_instances
+from aac.bluestacks import match_instance, scan_instances
 from aac.config import SETTINGS
 from aac.flow import Flow, FlowEngine, StopToken
 from aac.tools._console import setup as _console_setup
@@ -23,17 +23,13 @@ def _scan() -> list:
 
 
 def _resolve_serial(name: str) -> str | None:
-    for i in _scan():
-        if name in (i.key, i.display_name) and i.online and i.serial:
-            return i.serial
-    return None
+    inst = match_instance(name, _scan())
+    return inst.serial if (inst and inst.online and inst.serial) else None
 
 
 def _key_of(name: str) -> str:
-    for i in _scan():
-        if name in (i.key, i.display_name):
-            return i.key
-    return name
+    inst = match_instance(name, _scan())
+    return inst.key if inst else name
 
 
 def main() -> int:

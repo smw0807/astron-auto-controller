@@ -37,7 +37,10 @@ def main() -> int:
             return False
         if args.only is None:
             return True
-        return st.key in args.only or st.display_name in args.only
+        return any(
+            o == st.key or o == st.display_name or o.lower() in st.display_name.lower()
+            for o in args.only
+        )
 
     started = [st.key for st in mgr.all_states() if wanted(st) and mgr.start(st.key, args.interval)]
     if not started:
