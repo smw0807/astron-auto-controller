@@ -65,7 +65,9 @@ class CaptureView(QLabel):
         p.drawPixmap(0, 0, scaled)
         if self._drag_rect is not None:
             p.setPen(QPen(Qt.yellow, 2, Qt.DashLine))
-            p.drawRect(self._drag_rect)
+            # 마우스 좌표는 QLabel 기준이고 canvas는 이미지 기준이다.
+            image_origin = self._displayed_rect().topLeft()
+            p.drawRect(self._drag_rect.translated(-image_origin))
         if self._last_click_norm is not None:
             cx = self._last_click_norm[0] * scaled.width()
             cy = self._last_click_norm[1] * scaled.height()
