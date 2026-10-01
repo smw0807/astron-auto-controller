@@ -82,7 +82,7 @@
       "type": "tap_template",
       "params": {
         "template": "${tp_target}",
-        "region": "0.18,0.0,0.52,0.14",
+        "region": "0.18,0.0,0.70,0.14",
         "threshold": 0.9,
         "timeout": 8,
         "after_ms": 1500
