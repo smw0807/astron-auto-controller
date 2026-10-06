@@ -11,6 +11,13 @@
       }
     },
     {
+      "type": "call_flow",
+      "params": {
+        "flow": "편대중복가입닫기"
+      },
+      "note": "이전 실행에서 남은 중복 가입 안내 정리"
+    },
+    {
       "type": "if_template",
       "params": {
         "template": "scr_ingame.png",

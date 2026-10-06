@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "name": "편대중복가입닫기",
+  "description": "중복 가입 안내와 뒤이어 남는 편입 거절 안내가 보일 때만 [터치하세요]를 눌러 닫는다.",
+  "package": "",
+  "steps": [
+    {
+      "type": "if_template",
+      "params": {
+        "template": "sq_already_joined.png",
+        "region": "0.15,0.0,0.30,0.12",
+        "threshold": 0.9
+      },
+      "note": "캐릭터 이름을 제외한 중복 가입 안내 문구 확인",
+      "children": [
+        {
+          "type": "tap",
+          "params": {
+            "x": 0.38125,
+            "y": 0.166667,
+            "after_ms": 700
+          },
+          "note": "[터치하세요] 위치 탭 (문구가 깜빡여도 같은 위치)"
+        }
+      ]
+    },
+    {
+      "type": "if_template",
+      "params": {
+        "template": "sq_join_rejected.png",
+        "region": "0.15,0.0,0.30,0.12",
+        "threshold": 0.9
+      },
+      "note": "편대장이 편입을 허가하지 않았다는 후속 안내 확인",
+      "children": [
+        {
+          "type": "tap",
+          "params": {
+            "x": 0.38125,
+            "y": 0.166667,
+            "after_ms": 700
+          },
+          "note": "후속 안내의 [터치하세요] 탭"
+        }
+      ]
+    }
+  ]
+}
